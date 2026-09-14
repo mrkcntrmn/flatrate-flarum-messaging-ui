@@ -96,6 +96,8 @@ test('shell renderConversation uses { key, context }', () => {
   const src = read('components/MessagesPage.js');
   assert.match(src, /renderConversation\(\{\s*key: selected\.key/);
   assert.match(src, /context: \{ initialDraft, conversation \}/);
+  assert.match(src, /directConversationPaneStatus/);
+  assert.match(src, /syncDirectSelection/);
 });
 
 test('directory rows are keyed Flarum components', () => {
