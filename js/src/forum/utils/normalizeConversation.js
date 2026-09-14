@@ -6,6 +6,9 @@
  * @param {'live'|'direct'} [kindHint]
  * @returns {object|null}
  */
+const PRIMARY_LIVE_ROOM_KEY = 'community-general-live';
+const PRIMARY_LIVE_TITLE = 'FlatRate.wiki Live';
+
 export default function normalizeConversation(raw, kindHint) {
   if (raw == null || typeof raw !== 'object') {
     return null;
@@ -21,9 +24,9 @@ export default function normalizeConversation(raw, kindHint) {
     return null;
   }
 
-  const title = resolveTitle(raw, kind);
+  const title = resolveTitle(raw, kind, sourceId);
   const privacy = resolvePrivacy(raw, kind);
-  const identities = resolveIdentities(raw, title);
+  const identities = resolveIdentities(raw, title, sourceId);
 
   return {
     id: `${kind}:${sourceId}`,
@@ -85,16 +88,27 @@ function resolveSourceId(raw, kind) {
   return null;
 }
 
-function resolveTitle(raw, kind) {
+function resolveTitle(raw, kind, sourceId) {
   const candidates = [
-    readString(raw.title),
-    readString(raw.name),
-    readString(raw.displayName),
-    readString(raw.username),
+    readDisplayText(raw.title),
+    readDisplayText(raw.name),
+    readDisplayText(raw.displayName),
+    readDisplayText(raw.username),
     recipientTitle(raw),
-    kind === 'live' ? readString(raw.roomKey || raw.room_key) : null,
   ];
-  return candidates.find((value) => value) || 'Conversation';
+  let title = candidates.find((value) => value) || null;
+
+  if (kind === 'live' && String(sourceId) === PRIMARY_LIVE_ROOM_KEY) {
+    if (!title || title === PRIMARY_LIVE_ROOM_KEY) {
+      return PRIMARY_LIVE_TITLE;
+    }
+  }
+
+  if (!title && kind === 'live') {
+    title = readDisplayText(raw.roomKey || raw.room_key);
+  }
+
+  return title || 'Conversation';
 }
 
 function recipientTitle(raw) {
@@ -102,18 +116,19 @@ function recipientTitle(raw) {
   const names = recipients
     .map((recipient) => {
       const user = recipient && typeof recipient.user === 'function' ? recipient.user() : recipient?.user || recipient;
-      return readString(user?.displayName) || readString(user?.username) || readString(user?.display_name);
+      return readDisplayText(user?.displayName) || readDisplayText(user?.username) || readDisplayText(user?.display_name);
     })
     .filter(Boolean);
   return names.length ? names.join(', ') : null;
 }
 
-function resolveIdentities(raw, title) {
+function resolveIdentities(raw, title, sourceId) {
   const identities = new Set();
   if (title) identities.add(title.toLowerCase());
+  if (sourceId) identities.add(String(sourceId).toLowerCase());
 
-  for (const key of ['username', 'displayName', 'display_name', 'name', 'roomKey', 'room_key']) {
-    const value = readString(raw[key]);
+  for (const key of ['username', 'displayName', 'display_name', 'name', 'roomKey', 'room_key', 'key']) {
+    const value = readDisplayText(raw[key]);
     if (value) identities.add(value.toLowerCase());
   }
 
@@ -121,7 +136,7 @@ function resolveIdentities(raw, title) {
   for (const recipient of recipients) {
     const user = recipient && typeof recipient.user === 'function' ? recipient.user() : recipient?.user || recipient;
     for (const key of ['username', 'displayName', 'display_name', 'name']) {
-      const value = readString(user?.[key]);
+      const value = readDisplayText(user?.[key]);
       if (value) identities.add(value.toLowerCase());
     }
   }
@@ -186,13 +201,21 @@ function resolveAvatarUrl(raw) {
   const recipients = Array.isArray(raw.recipients) ? raw.recipients : [];
   for (const recipient of recipients) {
     const user = recipient && typeof recipient.user === 'function' ? recipient.user() : recipient?.user || recipient;
-    const url = readString(user?.avatarUrl) || readString(user?.avatar_url);
+    const url = readDisplayText(user?.avatarUrl) || readDisplayText(user?.avatar_url);
     if (url) return url;
   }
   return null;
 }
 
-function readString(value) {
+/**
+ * Presentation-only text reader for titles/labels.
+ * Accepts strings, functions returning those, and simple text-fragment arrays.
+ * Never stringifies arbitrary objects.
+ *
+ * @param {*} value
+ * @returns {string|null}
+ */
+export function readDisplayText(value) {
   if (typeof value === 'function') {
     try {
       value = value();
@@ -200,9 +223,25 @@ function readString(value) {
       return null;
     }
   }
-  if (typeof value !== 'string') {
-    return null;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
   }
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    const parts = [];
+    for (const part of value) {
+      const text = readDisplayText(part);
+      if (text) parts.push(text);
+    }
+    const joined = parts.join('').trim();
+    return joined ? joined : null;
+  }
+
+  return null;
 }
