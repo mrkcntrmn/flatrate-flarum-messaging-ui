@@ -98,6 +98,13 @@ test('shell renderConversation uses { key, context }', () => {
   assert.match(src, /context: \{ initialDraft, conversation \}/);
 });
 
+test('directory rows are keyed Flarum components', () => {
+  const dir = read('components/ConversationDirectory.js');
+  const row = read('components/ConversationRow.js');
+  assert.match(dir, /key=\{conversation\.id\}/);
+  assert.match(row, /export default class ConversationRow extends Component/);
+});
+
 test('composer.json does not require live-chat or the DM bridge', () => {
   const composer = JSON.parse(readFileSync(join(ROOT, 'composer.json'), 'utf8'));
   assert.equal(composer.name, 'flatrate/flarum-messaging-ui');

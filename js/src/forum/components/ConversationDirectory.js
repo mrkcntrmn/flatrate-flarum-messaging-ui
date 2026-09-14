@@ -10,6 +10,7 @@ export default class ConversationDirectory extends Component {
       <div className="ConversationDirectory" role="list">
         {conversations.map((conversation) => (
           <ConversationRow
+            key={conversation.id}
             conversation={conversation}
             active={!!(selected && selected.kind === conversation.kind && selected.key === conversation.sourceId)}
           />
