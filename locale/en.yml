@@ -1,0 +1,32 @@
+flatrate-messaging-ui:
+  forum:
+    nav:
+      messages: Messages
+    page:
+      title: Messages
+      search_placeholder: Search conversations
+      compose: New message
+      back: Back
+      sign_in_required: Sign in to view Messages.
+      sign_in: Log In
+      unavailable: Messages is not available because Live Chat and Direct Messages are not connected.
+      empty_title: No conversations yet
+      empty_body: Start a conversation to see it here.
+      empty_cta: Start a conversation
+      select_prompt: Select a conversation
+      load_error: Some conversations could not be loaded.
+    filters:
+      all: All
+      unread: Unread
+      direct: Direct
+      live: Live
+    row:
+      live: LIVE
+      direct: DIRECT
+      public_room: Public room
+      private: Private
+      unread: "{count} unread"
+    actions:
+      message: Message
+    profile:
+      message: Message

@@ -1,0 +1,248 @@
+.MessagesPage {
+  max-width: 100%;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+.MessagesPage :focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.MessagesPage-status,
+.MessagesPage-error {
+  padding: 24px 16px;
+  max-width: 36rem;
+}
+
+.MessagesPage-error {
+  color: var(--error-color);
+  padding: 8px 12px;
+}
+
+.MessagesPage-directory,
+.MessagesPage-conversation {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.MessagesPage-directoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+}
+
+.MessagesPage-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.MessagesPage-search {
+  padding: 0 12px 8px;
+}
+
+.MessagesPage-search .FormControl {
+  width: 100%;
+  max-width: 100%;
+}
+
+.MessagingFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 12px;
+}
+
+.MessagingFilters-button {
+  min-width: 0;
+}
+
+.ConversationDirectory {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ConversationRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 10px 12px;
+  text-align: left;
+  color: inherit;
+  text-decoration: none;
+}
+
+.ConversationRow.is-active {
+  background: var(--control-bg);
+}
+
+.ConversationRow-avatar,
+.ConversationRow-icon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.ConversationRow-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--control-bg);
+}
+
+.ConversationRow-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ConversationRow-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.ConversationRow-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted-color);
+  font-size: 12px;
+}
+
+.ConversationRow-kind,
+.ConversationRow-privacy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ConversationRow-privacy-text,
+.ConversationRow-activity {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ConversationRow-unread {
+  flex: 0 0 auto;
+  min-width: 16px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.MessagingEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 24px 12px;
+  min-width: 0;
+}
+
+.MessagingEmptyState-icon {
+  font-size: 28px;
+}
+
+.MessagesPage-back {
+  display: none;
+  margin: 8px 12px;
+}
+
+.MessagesPage-conversationPane {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.FlatRateMessagesNav {
+  position: relative;
+}
+
+.FlatRateMessagesNav-unread {
+  position: absolute;
+  top: 2px;
+  left: 18px;
+  background: var(--header-control-color);
+  color: var(--header-bg);
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 4px 3px;
+  line-height: 1em;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--header-bg);
+  min-width: 16px;
+  height: 16px;
+  text-align: center;
+}
+
+@media @phone {
+  .FlatRateMessagesNav-unread {
+    left: 20px;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesPage-directory {
+    display: none;
+  }
+
+  .MessagesPage:not(.viewing-conversation) .MessagesPage-conversation {
+    display: none;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesPage-back {
+    display: inline-flex;
+  }
+}
+
+@media @tablet-up {
+  .FlatRateMessagesNav {
+    .Button--icon();
+  }
+
+  .MessagesPage {
+    display: grid;
+    grid-template-columns: minmax(240px, 34%) minmax(0, 1fr);
+    min-height: calc(100vh - var(--header-height, 52px));
+  }
+
+  .MessagesPage-directory {
+    border-right: 1px solid var(--control-bg);
+    overflow-y: auto;
+  }
+
+  .MessagesPage-conversation {
+    overflow: auto;
+  }
+
+  .MessagesPage-back {
+    display: none !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .MessagesPage,
+  .ConversationRow,
+  .MessagesPage-directoryHeader {
+    overflow-x: hidden;
+  }
+}
