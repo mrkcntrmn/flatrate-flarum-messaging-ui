@@ -6,6 +6,7 @@ import LogInModal from 'flarum/forum/components/LogInModal';
 import ConversationDirectory from './ConversationDirectory';
 import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
+import MessagesConversationHeader from './MessagesConversationHeader.js';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
 import providerConversationKey from '../utils/providerConversationKey.js';
@@ -152,14 +153,23 @@ export default class MessagesPage extends Page {
       return <div className="MessagesPage-conversationPane">{app.translator.trans('flatrate-messaging-ui.forum.page.select_prompt')}</div>;
     }
 
+    const conversation =
+      (state && state.findBySelection(selected.kind, selected.key)) || {
+        kind: selected.kind,
+        sourceId: selected.key,
+        id: `${selected.kind}:${selected.key}`,
+        title: selected.kind === 'live' && selected.key === 'community-general-live' ? 'FlatRate.wiki Live' : selected.key,
+      };
+
     if (selected.kind === 'direct') {
       const paneStatus = directConversationPaneStatus(state?.selection, selected.key);
       if (paneStatus === 'loading' || paneStatus === 'idle') {
-        return this.conversationChrome(<LoadingIndicator />);
+        return this.conversationChrome(<LoadingIndicator />, { kind: 'direct', conversation });
       }
       if (paneStatus === 'not-found') {
         return this.conversationChrome(
-          <div className="MessagesPage-status">{app.translator.trans('flatrate-messaging-ui.forum.page.conversation_unavailable')}</div>
+          <div className="MessagesPage-status">{app.translator.trans('flatrate-messaging-ui.forum.page.conversation_unavailable')}</div>,
+          { kind: 'direct', conversation }
         );
       }
       if (paneStatus === 'error') {
@@ -175,15 +185,13 @@ export default class MessagesPage extends Page {
             >
               {app.translator.trans('flatrate-messaging-ui.forum.page.conversation_retry')}
             </Button>
-          </div>
+          </div>,
+          { kind: 'direct', conversation }
         );
       }
     }
 
     const provider = selected.kind === 'live' ? sources.live : sources.direct;
-    const conversation = state
-      ? state.findBySelection(selected.kind, selected.key)
-      : { kind: selected.kind, sourceId: selected.key, id: `${selected.kind}:${selected.key}` };
     const draftKey = `${selected.kind}:${selected.key}`;
     let initialDraft;
     if (state && this.consumedDraftKey !== draftKey) {
@@ -199,16 +207,19 @@ export default class MessagesPage extends Page {
           })
         : null;
 
-    return this.conversationChrome(pane);
+    return this.conversationChrome(pane, { kind: selected.kind, conversation });
   }
 
-  conversationChrome(body) {
+  conversationChrome(body, { kind = null, conversation = null } = {}) {
+    const paneClass =
+      'MessagesPage-conversationPane' + (kind ? ` MessagesPage-conversationPane--${kind}` : '');
+
     return (
-      <div className="MessagesPage-conversationPane">
-        <Button className="Button MessagesPage-back" icon="fas fa-arrow-left" onclick={() => this.backToList()}>
-          {app.translator.trans('flatrate-messaging-ui.forum.page.back')}
-        </Button>
-        {body}
+      <div className={paneClass}>
+        {kind ? (
+          <MessagesConversationHeader kind={kind} conversation={conversation} onBack={() => this.backToList()} />
+        ) : null}
+        <div className="MessagesPage-conversationBody">{body}</div>
       </div>
     );
   }

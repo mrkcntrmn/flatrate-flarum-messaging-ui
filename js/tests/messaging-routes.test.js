@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseMessagingPath, conversationPath } from '../src/forum/utils/messagingRoutes.js';
+import { parseMessagingPath, conversationPath, isUnifiedMessagesRoute } from '../src/forum/utils/messagingRoutes.js';
 
 test('canonical live/direct route parse', () => {
   assert.deepEqual(parseMessagingPath('/messages'), {
@@ -29,4 +29,15 @@ test('false prefix and public forum paths are not messages routes', () => {
   assert.equal(parseMessagingPath('/t/gm'), null);
   assert.equal(parseMessagingPath('/u/tech_x'), null);
   assert.equal(parseMessagingPath('/live/general'), null);
+});
+
+test('isUnifiedMessagesRoute guards brand injection', () => {
+  assert.equal(isUnifiedMessagesRoute('/messages'), true);
+  assert.equal(isUnifiedMessagesRoute('/messages?filter=live'), true);
+  assert.equal(isUnifiedMessagesRoute('/messages/live/community-general-live'), true);
+  assert.equal(isUnifiedMessagesRoute('/messages/direct/12'), true);
+  assert.equal(isUnifiedMessagesRoute('/conversations'), false);
+  assert.equal(isUnifiedMessagesRoute('/live'), false);
+  assert.equal(isUnifiedMessagesRoute('/'), false);
+  assert.equal(isUnifiedMessagesRoute('/messaging'), false);
 });

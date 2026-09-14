@@ -125,3 +125,34 @@ test('row contract source ignores body/preview', () => {
   assert.match(src, /unreadCount/);
   assert.doesNotMatch(src, /\.body\b|\.preview\b|lastMessage/);
 });
+
+test('translated Live title children are not room keys', () => {
+  const row = normalizeConversation(
+    {
+      kind: 'live',
+      key: 'community-general-live',
+      title: ['FlatRate.wiki Live'],
+      roomKey: 'community-general-live',
+      unreadCount: 0,
+      isPublic: true,
+    },
+    'live'
+  );
+  assert.equal(row.title, 'FlatRate.wiki Live');
+  assert.equal(row.sourceId, 'community-general-live');
+  assert.notEqual(row.title, 'community-general-live');
+  assert.ok(row.identities.includes('community-general-live'));
+});
+
+test('primary Live room falls back when title is the room key', () => {
+  const row = normalizeConversation(
+    {
+      kind: 'live',
+      key: 'community-general-live',
+      title: 'community-general-live',
+      roomKey: 'community-general-live',
+    },
+    'live'
+  );
+  assert.equal(row.title, 'FlatRate.wiki Live');
+});

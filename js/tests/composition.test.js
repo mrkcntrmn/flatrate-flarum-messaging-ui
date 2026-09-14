@@ -98,6 +98,8 @@ test('shell renderConversation uses { key, context }', () => {
   assert.match(src, /context: \{ initialDraft, conversation \}/);
   assert.match(src, /directConversationPaneStatus/);
   assert.match(src, /syncDirectSelection/);
+  assert.match(src, /MessagesConversationHeader/);
+  assert.match(src, /MessagesPage-conversationPane--/);
 });
 
 test('directory rows are keyed Flarum components', () => {
