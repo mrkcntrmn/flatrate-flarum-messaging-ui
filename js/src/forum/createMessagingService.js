@@ -1,6 +1,7 @@
 import combinedUnread from './utils/combinedUnread.js';
 import discoverSources from './utils/discoverSources.js';
 import { conversationPath } from './utils/messagingRoutes.js';
+import providerConversationKey from './utils/providerConversationKey.js';
 
 /**
  * Build the public app.flatrateMessaging service.
@@ -64,7 +65,7 @@ export default function createMessagingService({ app, route, state }) {
       }
 
       if (existing) {
-        navigate('/messages/direct/' + directKey(existing), false);
+        navigate('/messages/direct/' + providerConversationKey(existing), false);
         return;
       }
 
@@ -74,7 +75,7 @@ export default function createMessagingService({ app, route, state }) {
 
       direct.startConversationWithUser(user, {
         onConversationResolved(conversation, meta = {}) {
-          const id = directKey(conversation);
+          const id = providerConversationKey(conversation);
           if (meta.draft) {
             state.stashInitialDraft(id, meta.draft);
           }
@@ -85,13 +86,3 @@ export default function createMessagingService({ app, route, state }) {
   };
 }
 
-function directKey(conversation) {
-  if (!conversation) {
-    return '';
-  }
-  if (conversation.sourceId != null && conversation.sourceId !== '') {
-    return String(conversation.sourceId);
-  }
-  const id = String(typeof conversation.id === 'function' ? conversation.id() : (conversation.id ?? ''));
-  return id.startsWith('direct:') ? id.slice(7) : id;
-}

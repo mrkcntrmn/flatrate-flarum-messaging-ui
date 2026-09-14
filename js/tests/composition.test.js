@@ -54,7 +54,7 @@ test('openDirectToUser guest/missing user is a no-op; existing 1:1 navigates', a
   };
   const app = {
     session: { user: { id: () => '1' } },
-    flatrateMessagingDirect: direct,
+    flatRateMessagingSources: { direct },
   };
   const service = createMessagingService({
     app,
@@ -67,7 +67,7 @@ test('openDirectToUser guest/missing user is a no-op; existing 1:1 navigates', a
   await service.openDirectToUser({ id: () => '3' });
 
   const guestService = createMessagingService({
-    app: { session: { user: null }, flatrateMessagingDirect: direct },
+    app: { session: { user: null }, flatRateMessagingSources: { direct } },
     state: { stashInitialDraft() {} },
     route: (path) => navigations.push({ path, guest: true }),
   });
@@ -84,6 +84,18 @@ test('post action uses post.user() rather than discussion inference', () => {
   const src = read('index.js');
   assert.match(src, /const target = post && typeof post\.user === 'function' \? post\.user\(\) : null/);
   assert.doesNotMatch(src, /discussion\(\)|quoted|lastReply|starter/);
+});
+
+test('discovers providers from app.flatRateMessagingSources', () => {
+  const src = read('utils/discoverSources.js');
+  assert.match(src, /flatRateMessagingSources/);
+  assert.doesNotMatch(src, /flatrateMessagingLive|flatrateMessagingDirect/);
+});
+
+test('shell renderConversation uses { key, context }', () => {
+  const src = read('components/MessagesPage.js');
+  assert.match(src, /renderConversation\(\{\s*key: selected\.key/);
+  assert.match(src, /context: \{ initialDraft, conversation \}/);
 });
 
 test('composer.json does not require live-chat or the DM bridge', () => {

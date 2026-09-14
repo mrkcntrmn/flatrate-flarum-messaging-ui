@@ -77,6 +77,47 @@ test('no body preview field in normalized output', () => {
   }
 });
 
+test('normalizes exact Live and Direct provider row shapes', () => {
+  const live = normalizeConversation(
+    {
+      id: 'live:community-general-live',
+      kind: 'live',
+      key: 'community-general-live',
+      title: 'FlatRate.wiki Live',
+      activityAt: '2026-09-14T12:00:00.000Z',
+      unreadCount: 3,
+      isPublic: true,
+      userId: null,
+      roomKey: 'community-general-live',
+    },
+    'live'
+  );
+  assert.equal(live.id, 'live:community-general-live');
+  assert.equal(live.sourceId, 'community-general-live');
+  assert.equal(live.privacy, 'public');
+  assert.equal(live.unreadCount, 3);
+
+  const direct = normalizeConversation(
+    {
+      id: 'direct:123',
+      kind: 'direct',
+      key: '123',
+      title: 'tech_327',
+      activityAt: '2026-09-14T11:00:00.000Z',
+      unreadCount: 2,
+      isPublic: false,
+      userId: '327',
+      conversationId: '123',
+    },
+    'direct'
+  );
+  assert.equal(direct.id, 'direct:123');
+  assert.equal(direct.sourceId, '123');
+  assert.equal(direct.privacy, 'private');
+  assert.equal(direct.title, 'tech_327');
+  assert.equal(direct.unreadCount, 2);
+});
+
 test('row contract source ignores body/preview', () => {
   const src = readFileSync(join(ROOT, 'js/src/forum/components/ConversationRow.js'), 'utf8');
   assert.match(src, /title/);

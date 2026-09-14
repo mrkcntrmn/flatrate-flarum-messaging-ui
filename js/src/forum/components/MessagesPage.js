@@ -8,6 +8,7 @@ import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
+import providerConversationKey from '../utils/providerConversationKey.js';
 
 export default class MessagesPage extends Page {
   oninit(vnode) {
@@ -127,7 +128,10 @@ export default class MessagesPage extends Page {
 
     const pane =
       provider && typeof provider.renderConversation === 'function'
-        ? provider.renderConversation(conversation || { kind: selected.kind, sourceId: selected.key }, { initialDraft })
+        ? provider.renderConversation({
+            key: selected.key,
+            context: { initialDraft, conversation },
+          })
         : null;
 
     return (
@@ -191,9 +195,8 @@ export default class MessagesPage extends Page {
     }
     direct.startConversationWithUser(null, {
       onConversationResolved(conversation, meta = {}) {
-        const id = conversation?.sourceId || conversation?.id;
-        if (!id) return;
-        const key = String(id).startsWith('direct:') ? String(id).slice(7) : String(id);
+        const key = providerConversationKey(conversation);
+        if (!key) return;
         if (meta.draft && app.flatrateMessagingState) {
           app.flatrateMessagingState.stashInitialDraft(key, meta.draft);
         }

@@ -27,7 +27,12 @@ export default class ConversationRow extends Component {
     const activity = activityAt ? humanTime(new Date(activityAt)) : null;
 
     return (
-      <Link className={'ConversationRow' + (active ? ' is-active' : '')} href={href} title={title}>
+      <Link
+        className={'ConversationRow' + (active ? ' is-active' : '')}
+        href={href}
+        title={title}
+        aria-current={active ? 'page' : undefined}
+      >
         {avatarUrl ? (
           <img className="ConversationRow-avatar" src={avatarUrl} alt="" />
         ) : (

@@ -1,14 +1,16 @@
 /**
  * Discover live / direct providers from a runtime registry (the Flarum app).
+ * Canonical namespace: app.flatRateMessagingSources.{live,direct}
  * Missing keys are null — the shell must not Composer-require those packages.
  *
  * @param {object} [registry]
  * @returns {{ live: object|null, direct: object|null }}
  */
 export default function discoverSources(registry) {
+  const nested = registry?.flatRateMessagingSources;
   return {
-    live: registry?.flatrateMessagingLive || null,
-    direct: registry?.flatrateMessagingDirect || null,
+    live: nested?.live || null,
+    direct: nested?.direct || null,
   };
 }
 

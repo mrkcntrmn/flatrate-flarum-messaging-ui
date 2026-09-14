@@ -45,8 +45,9 @@ Enable **Messages** in the admin extension list.
 Runtime providers (implemented by the Live Chat / DM packages, not this shell) should assign:
 
 ```js
-app.flatrateMessagingLive = { /* listConversations, getUnreadTotal, renderConversation */ };
-app.flatrateMessagingDirect = { /* listConversations, getUnreadTotal, renderConversation, findConversationWithUser, startConversationWithUser */ };
+app.flatRateMessagingSources ??= {};
+app.flatRateMessagingSources.live = { /* listConversations, getUnreadTotal, renderConversation */ };
+app.flatRateMessagingSources.direct = { /* listConversations, getUnreadTotal, renderConversation, findConversationWithUser, startConversationWithUser */ };
 ```
 
 ## Scripts

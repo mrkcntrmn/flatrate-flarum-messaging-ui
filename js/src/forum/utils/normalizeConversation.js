@@ -66,8 +66,14 @@ function resolveSourceId(raw, kind) {
   if (raw.sourceId != null && raw.sourceId !== '') {
     return String(raw.sourceId);
   }
+  if (raw.key != null && raw.key !== '') {
+    return String(raw.key);
+  }
   if (kind === 'live' && (raw.roomKey != null || raw.room_key != null)) {
     return String(raw.roomKey ?? raw.room_key);
+  }
+  if (kind === 'direct' && (raw.conversationId != null || raw.conversation_id != null)) {
+    return String(raw.conversationId ?? raw.conversation_id);
   }
   if (raw.id != null) {
     const id = String(typeof raw.id === 'function' ? raw.id() : raw.id);
@@ -128,10 +134,16 @@ function resolvePrivacy(raw, kind) {
   if (explicit === 'private' || explicit === 'public') {
     return explicit;
   }
-  if (raw.type === 'chat' || raw.type === 'pm' || raw.private === true) {
+  if (raw.isPublic === true || raw.public === true) {
+    return 'public';
+  }
+  if (raw.isPublic === false || raw.private === true) {
     return 'private';
   }
-  if (raw.type === 'channel' || raw.public === true) {
+  if (raw.type === 'chat' || raw.type === 'pm') {
+    return 'private';
+  }
+  if (raw.type === 'channel') {
     return 'public';
   }
   return kind === 'direct' ? 'private' : 'public';
@@ -159,7 +171,7 @@ function resolveActivityAt(raw) {
 }
 
 function resolveUnreadCount(raw) {
-  const value = raw.unreadCount ?? raw.unread_count ?? raw.unread ?? 0;
+  const value = raw.unreadCount ?? raw.unReadCount ?? raw.unread_count ?? raw.unread ?? 0;
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
