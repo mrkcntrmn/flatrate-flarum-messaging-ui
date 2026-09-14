@@ -14,6 +14,9 @@ flatrate-messaging-ui:
       empty_body: Start a conversation to see it here.
       empty_cta: Start a conversation
       select_prompt: Select a conversation
+      conversation_unavailable: This conversation is not available.
+      conversation_error: This conversation could not be loaded.
+      conversation_retry: Try again
       load_error: Some conversations could not be loaded.
     filters:
       all: All

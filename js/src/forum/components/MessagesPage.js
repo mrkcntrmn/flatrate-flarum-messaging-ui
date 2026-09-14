@@ -9,6 +9,7 @@ import MessagingEmptyState from './MessagingEmptyState';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
 import providerConversationKey from '../utils/providerConversationKey.js';
+import directConversationPaneStatus from '../utils/directConversationPaneStatus.js';
 
 export default class MessagesPage extends Page {
   oninit(vnode) {
@@ -24,8 +25,44 @@ export default class MessagesPage extends Page {
       state.setQuery('');
     }
 
+    this.syncDirectSelection();
+
     if (app.session.user && app.flatrateMessaging) {
-      Promise.resolve(app.flatrateMessaging.refresh()).then(() => m.redraw());
+      Promise.resolve(app.flatrateMessaging.refresh()).then(() => {
+        this.syncDirectSelection();
+        m.redraw();
+      });
+    }
+  }
+
+  onbeforeupdate() {
+    this.syncDirectSelection();
+  }
+
+  syncDirectSelection() {
+    const state = app.flatrateMessagingState;
+    if (!state) {
+      return;
+    }
+
+    if (!app.session.user) {
+      if (state.selection.status !== 'idle') {
+        state.clearDirectSelection();
+      }
+      return;
+    }
+
+    const selected = this.selectedFromRoute();
+    if (!selected || selected.kind !== 'direct') {
+      if (state.selection.kind === 'direct') {
+        state.clearDirectSelection();
+      }
+      return;
+    }
+
+    const result = state.ensureDirectSelection(selected.key);
+    if (result && typeof result.then === 'function') {
+      result.then(() => m.redraw());
     }
   }
 
@@ -115,6 +152,34 @@ export default class MessagesPage extends Page {
       return <div className="MessagesPage-conversationPane">{app.translator.trans('flatrate-messaging-ui.forum.page.select_prompt')}</div>;
     }
 
+    if (selected.kind === 'direct') {
+      const paneStatus = directConversationPaneStatus(state?.selection, selected.key);
+      if (paneStatus === 'loading' || paneStatus === 'idle') {
+        return this.conversationChrome(<LoadingIndicator />);
+      }
+      if (paneStatus === 'not-found') {
+        return this.conversationChrome(
+          <div className="MessagesPage-status">{app.translator.trans('flatrate-messaging-ui.forum.page.conversation_unavailable')}</div>
+        );
+      }
+      if (paneStatus === 'error') {
+        return this.conversationChrome(
+          <div className="MessagesPage-status">
+            <p>{app.translator.trans('flatrate-messaging-ui.forum.page.conversation_error')}</p>
+            <Button
+              className="Button"
+              onclick={() => {
+                if (!state) return;
+                Promise.resolve(state.resolveDirectSelection(selected.key)).then(() => m.redraw());
+              }}
+            >
+              {app.translator.trans('flatrate-messaging-ui.forum.page.conversation_retry')}
+            </Button>
+          </div>
+        );
+      }
+    }
+
     const provider = selected.kind === 'live' ? sources.live : sources.direct;
     const conversation = state
       ? state.findBySelection(selected.kind, selected.key)
@@ -134,12 +199,16 @@ export default class MessagesPage extends Page {
           })
         : null;
 
+    return this.conversationChrome(pane);
+  }
+
+  conversationChrome(body) {
     return (
       <div className="MessagesPage-conversationPane">
         <Button className="Button MessagesPage-back" icon="fas fa-arrow-left" onclick={() => this.backToList()}>
           {app.translator.trans('flatrate-messaging-ui.forum.page.back')}
         </Button>
-        {pane}
+        {body}
       </div>
     );
   }
