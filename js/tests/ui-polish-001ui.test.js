@@ -106,6 +106,9 @@ test('shell owns baseline overflow actions and merges provider items', () => {
   const page = read('js/src/forum/components/MessagesPage.js');
   assert.match(page, /providerOverflowItems/);
   assert.match(page, /headerOverflowItems/);
+  // Providers must be resolved from the Flarum app registry (not a bare discoverSources()).
+  assert.match(page, /discoverSources\(app\)/);
+  assert.doesNotMatch(page, /discoverSources\(\s*\)/);
   // Direct with null/empty provider contribution still renders shell overflow.
   const header = read('js/src/forum/components/MessagesConversationHeader.js');
   assert.match(header, /buildShellHeaderOverflowItems\(\{ onBack \}\)/);
