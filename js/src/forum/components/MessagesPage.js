@@ -224,7 +224,8 @@ export default class MessagesPage extends Page {
   conversationChrome(body, { kind = null, conversation = null } = {}) {
     const paneClass =
       'MessagesPage-conversationPane' + (kind ? ` MessagesPage-conversationPane--${kind}` : '');
-    // Registry must be the Flarum app — bare discoverSources() yields null providers.
+    // Registry must be the Flarum app — calling discoverSources without app
+    // yields null providers and drops Live overflow contributions.
     const sources = discoverSources(app);
     const provider = kind === 'live' ? sources.live : kind === 'direct' ? sources.direct : null;
     const selected = this.selectedFromRoute();
