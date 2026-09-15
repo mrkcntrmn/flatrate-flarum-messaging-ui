@@ -122,6 +122,15 @@ test('shell viewport CSS constrains page height and owns message scroll', () => 
   assert.match(less, /\.App--messages\s*\{[\s\S]*display:\s*flex/);
   assert.match(less, /\.App--messages[\s\S]*\.App-content\s*\{[\s\S]*min-height:\s*0\s*!important/);
   assert.match(less, /\.App-content\s*>\s*div:first-child\s*\{[\s\S]*position:\s*absolute/);
+  // 002F: route-scoped footer removal prevents residual document scroll.
+  assert.match(less, /\.App--messages\s*~\s*footer/);
+  assert.match(less, /\.App--messages\s*~\s*\.flatrate-forum-footer/);
+  assert.match(less, /\.App--messages\s*~\s*footer[\s\S]*display:\s*none/);
+});
+
+test('MessagesPage sets App--messages bodyClass for route-scoped viewport ownership', () => {
+  const src = read('components/MessagesPage.js');
+  assert.match(src, /this\.bodyClass\s*=\s*'App--messages'/);
 });
 
 test('directory rows are keyed Flarum components', () => {

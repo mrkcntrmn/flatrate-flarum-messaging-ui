@@ -55,6 +55,16 @@
   }
 }
 
+// FORUM-MESSAGING-002F: the Messages App frame owns the viewport, but Flarum's
+// footer sibling remains in normal document flow and contributed ~118px of
+// outer scroll (margin-top + footer height). Remove the footer from layout
+// only while Messages is active; non-Messages routes are unaffected.
+.App--messages ~ footer,
+.App--messages ~ .App-footer,
+.App--messages ~ .flatrate-forum-footer {
+  display: none;
+}
+
 .MessagesPage,
 .MessagesShell {
   height: 100%;
