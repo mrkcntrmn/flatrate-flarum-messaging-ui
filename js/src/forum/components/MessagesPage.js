@@ -7,6 +7,7 @@ import ConversationDirectory from './ConversationDirectory';
 import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
+import { BRAND_HREF, BRAND_TEXT } from './MessagesBrandLink.js';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
 import providerConversationKey from '../utils/providerConversationKey.js';
@@ -84,6 +85,9 @@ export default class MessagesPage extends Page {
 
     return (
       <div className={'MessagesPage MessagesShell' + (viewing ? ' viewing-conversation' : '')}>
+        <a className="MessagesBrandLink MessagesBrandLink--mobilePinned" href={BRAND_HREF} aria-label={BRAND_TEXT}>
+          {BRAND_TEXT}
+        </a>
         <aside className="MessagesPage-directory MessagesDirectoryPane">
           {this.directoryView({ guest, mode, sources, state, conversations, selected, availableFilters })}
         </aside>
