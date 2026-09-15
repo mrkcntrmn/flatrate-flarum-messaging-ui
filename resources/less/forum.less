@@ -15,6 +15,8 @@
 // Application frame: Messages fills the usable viewport; document must not grow with history.
 .App--messages {
   overflow: hidden;
+  // Flarum reserves bottom padding for the global discussion composer.
+  padding-bottom: 0 !important;
 
   .App-content {
     padding-bottom: 0;
