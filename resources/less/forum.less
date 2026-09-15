@@ -689,7 +689,8 @@
 
   .MessagesPage-conversationPane--direct .message-content,
   .MessagesSyntheticBubble {
-    max-width: min(70%, 42rem);
+    // Avoid CSS min(%, rem): Flarum's PHP less.php cannot evaluate mixed units.
+    max-width: 42rem;
   }
 }
 
