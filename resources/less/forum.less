@@ -6,15 +6,24 @@
   --messages-composer-max-height: 144px;
   --messages-row-min-height: 60px;
   --messages-near-bottom-px: 100px;
-  --messages-header-offset: var(--header-height, 52px);
-  --messages-shell-height: calc(100vh - var(--messages-header-offset));
-  --messages-shell-height: calc(100dvh - var(--messages-header-offset));
+  // Literal offset: Flarum's PHP less.php strips nested var() inside calc().
+  --messages-header-offset: 52px;
+  --messages-shell-height: ~"calc(100vh - 52px)";
+  --messages-shell-height: ~"calc(100dvh - 52px)";
 }
 
 // Application frame: Messages fills the usable viewport; document must not grow with history.
 .App--messages {
+  overflow: hidden;
+
   .App-content {
     padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  // Global discussion composer must not reserve page space on Messages.
+  .App-composer {
+    display: none;
   }
 }
 

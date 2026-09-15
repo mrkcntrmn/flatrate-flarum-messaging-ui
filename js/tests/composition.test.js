@@ -109,12 +109,13 @@ test('shell renderConversation uses additive presentationVersion=2 context', () 
 
 test('shell viewport CSS constrains page height and owns message scroll', () => {
   const less = readFileSync(join(ROOT, 'resources/less/forum.less'), 'utf8');
-  assert.match(less, /--messages-shell-height:\s*calc\(100dvh/);
+  assert.match(less, /--messages-shell-height:\s*~?"calc\(100dvh - 52px\)"/);
   assert.match(less, /\.MessagesPage,\s*\n\.MessagesShell\s*\{[\s\S]*overflow:\s*hidden/);
   assert.match(less, /\.MessagesMessageViewport\s*\{[\s\S]*overflow-y:\s*auto/);
   assert.match(less, /\.MessagesComposer\s*\{[\s\S]*flex:\s*0\s*0\s*auto/);
   assert.match(less, /--messages-directory-width:\s*320px/);
   assert.match(less, /safe-area-inset-bottom/);
+  assert.match(less, /\.App--messages\s*\{[\s\S]*overflow:\s*hidden/);
 });
 
 test('directory rows are keyed Flarum components', () => {
