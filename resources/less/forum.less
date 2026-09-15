@@ -484,6 +484,34 @@
   font-weight: 600;
 }
 
+.MessagesConversationHeader-overflow {
+  flex: 0 0 auto;
+}
+
+.MessagesConversationHeader-back,
+.MessagesConversationHeader-overflowToggle {
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.MessagesConversationHeader-overflowToggle {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+
+  &:hover,
+  &:focus,
+  &:focus-visible {
+    background: transparent !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
 .FlatRateMessagesNav {
   position: relative;
 }
@@ -680,6 +708,25 @@
     display: none;
   }
 
+  // Directory route: reuse the existing search control as the center app-bar
+  // surface between Flarum's hamburger and the pinned compose pencil.
+  .MessagesPage:not(.viewing-conversation) .MessagesPage-search {
+    position: fixed;
+    top: 4px;
+    left: 60px;
+    right: 60px;
+    z-index: 1100;
+    padding: 0;
+  }
+
+  .MessagesPage:not(.viewing-conversation) .MessagesPage-search .FormControl {
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
+  }
+
   .MessagesPage.viewing-conversation .MessagesPage-directory {
     display: none;
   }
@@ -688,8 +735,48 @@
     display: none;
   }
 
+  // Conversation route: this shared shell header replaces the normal mobile
+  // hamburger/compose chrome with back | title | overflow for Direct + Live.
+  .MessagesPage.viewing-conversation .MessagesConversationHeader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1101;
+    box-sizing: border-box;
+    height: var(--messages-header-offset);
+    min-height: var(--messages-header-offset);
+    padding: 4px 8px;
+    gap: 0;
+    background: var(--header-bg);
+    color: var(--header-control-color);
+    border-bottom: 1px solid var(--control-bg);
+  }
+
   .MessagesConversationHeader-back {
     display: inline-flex;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-main {
+    justify-content: center;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-avatar,
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-icon {
+    display: none;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-title {
+    color: inherit;
+    text-align: center;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-back,
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-overflowToggle {
+    color: inherit;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
   }
 
   .MessagesPage-directory,

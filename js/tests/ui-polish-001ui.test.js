@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isUnifiedMessagesRoute } from '../src/forum/utils/messagingRoutes.js';
+import { isMessagesIndexRoute, isUnifiedMessagesRoute } from '../src/forum/utils/messagingRoutes.js';
 import normalizeConversation from '../src/forum/utils/normalizeConversation.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -31,7 +31,7 @@ test('visible Messages heading is replaced with accessible hidden heading', () =
   assert.match(less, /\.MessagesPage-title\.visually-hidden/);
 });
 
-test('compose lives in top nav via canonical service, not directory chrome', () => {
+test('compose lives in directory app bar via canonical service, not conversation chrome', () => {
   const index = read('js/src/forum/index.js');
   assert.match(index, /HeaderSecondary/);
   assert.match(index, /FlatRateMessagesCompose/);
@@ -39,7 +39,8 @@ test('compose lives in top nav via canonical service, not directory chrome', () 
   const compose = read('js/src/forum/components/MessagesComposeButton.js');
   assert.match(compose, /fas fa-pen/);
   assert.match(compose, /composeDirect/);
-  assert.match(compose, /isUnifiedMessagesRoute/);
+  assert.match(compose, /isMessagesIndexRoute/);
+  assert.doesNotMatch(compose, /isUnifiedMessagesRoute/);
   assert.match(compose, /session\.user/);
   assert.match(compose, /sources\(\)\.direct|sources\.direct/);
   const page = read('js/src/forum/components/MessagesPage.js');
@@ -49,6 +50,14 @@ test('compose lives in top nav via canonical service, not directory chrome', () 
   const service = read('js/src/forum/createMessagingService.js');
   assert.match(service, /composeDirect\s*\(\)\s*\{/);
   assert.match(service, /startConversationWithUser\(null/);
+});
+
+test('Messages index route helper excludes Direct and Live conversations', () => {
+  assert.equal(isMessagesIndexRoute('/messages'), true);
+  assert.equal(isMessagesIndexRoute('/messages?filter=unread'), true);
+  assert.equal(isMessagesIndexRoute('/messages/direct/17'), false);
+  assert.equal(isMessagesIndexRoute('/messages/live/community-general-live'), false);
+  assert.equal(isMessagesIndexRoute('/messaging'), false);
 });
 
 test('ConversationRow exposes kind semantic classes', () => {
@@ -65,12 +74,70 @@ test('Live directory accent uses adaptive lime token', () => {
   assert.match(less, /\.ConversationRow--live \.ConversationRow-privacy i/);
 });
 
-test('back button is flat/transparent with Messages-scoped contract', () => {
+test('conversation header is shared back-title-overflow chrome', () => {
   const header = read('js/src/forum/components/MessagesConversationHeader.js');
   assert.match(header, /Button--flat MessagesConversationHeader-back/);
+  assert.match(header, /MessagesConversationHeader-main/);
+  assert.match(header, /MessagesConversationHeader-title/);
+  assert.match(header, /Dropdown/);
+  assert.match(header, /MessagesConversationHeader-overflow/);
+  assert.match(header, /fas fa-ellipsis-h/);
+  assert.match(header, /conversation_menu/);
+  assert.match(header, /buildShellHeaderOverflowItems/);
+  assert.match(header, /mergeHeaderOverflowItems/);
+  // Overflow exists from shell items — not gated on provider item length.
+  assert.doesNotMatch(header, /providerOverflowItems\?\.length/);
+  assert.doesNotMatch(header, /overflowItems\.length\s*\?/);
+  assert.doesNotMatch(header, /items\.length\s*\?\s*\n?\s*<Dropdown/);
   const less = read('resources/less/forum.less');
   assert.match(less, /\.MessagesConversationHeader-back/);
+  assert.match(less, /\.MessagesConversationHeader-overflowToggle/);
   assert.match(less, /background:\s*transparent/);
+});
+
+test('shell owns baseline overflow actions and merges provider items', () => {
+  const util = read('js/src/forum/utils/buildShellHeaderOverflowItems.js');
+  assert.match(util, /allMessages/);
+  assert.match(util, /newMessage/);
+  assert.match(util, /back_to_messages/);
+  assert.match(util, /composeDirect/);
+  assert.match(util, /mergeHeaderOverflowItems/);
+  assert.match(util, /SHELL_OVERFLOW_KEYS/);
+  const page = read('js/src/forum/components/MessagesPage.js');
+  assert.match(page, /providerOverflowItems/);
+  assert.match(page, /headerOverflowItems/);
+  // Providers must be resolved from the Flarum app registry (not a bare discoverSources()).
+  assert.match(page, /discoverSources\(app\)/);
+  assert.doesNotMatch(page, /discoverSources\(\s*\)/);
+  // Direct with null/empty provider contribution still renders shell overflow.
+  const header = read('js/src/forum/components/MessagesConversationHeader.js');
+  assert.match(header, /buildShellHeaderOverflowItems\(\{ onBack \}\)/);
+  assert.match(header, /mergeHeaderOverflowItems\(shellItems, providerOverflowItems\)/);
+});
+
+test('mobile directory search is pinned between nav and compose controls', () => {
+  const less = read('resources/less/forum.less');
+  assert.match(
+    less,
+    /\.MessagesPage:not\(\.viewing-conversation\) \.MessagesPage-search\s*\{[\s\S]*position:\s*fixed[\s\S]*left:\s*60px[\s\S]*right:\s*60px/
+  );
+  assert.match(
+    less,
+    /\.MessagesPage:not\(\.viewing-conversation\) \.MessagesPage-search \.FormControl\s*\{[\s\S]*height:\s*44px/
+  );
+});
+
+test('mobile conversation header replaces site chrome for Direct and Live', () => {
+  const less = read('resources/less/forum.less');
+  assert.match(
+    less,
+    /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader\s*\{[\s\S]*position:\s*fixed[\s\S]*height:\s*var\(--messages-header-offset\)/
+  );
+  assert.match(
+    less,
+    /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader-avatar,[\s\S]*\.MessagesConversationHeader-icon\s*\{[\s\S]*display:\s*none/
+  );
+  assert.match(less, /back \| title \| overflow/);
 });
 
 test('direct conversation pane is kind-scoped', () => {

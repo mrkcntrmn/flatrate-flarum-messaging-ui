@@ -46,16 +46,36 @@ export function conversationPath(kind, key) {
  * @returns {boolean}
  */
 export function isUnifiedMessagesRoute(path) {
-  if (path == null) {
-    if (typeof m !== 'undefined' && m.route && typeof m.route.get === 'function') {
-      path = m.route.get();
-    } else if (typeof window !== 'undefined' && window.location) {
-      path = window.location.pathname || '';
-    } else {
-      return false;
-    }
+  const resolved = runtimePath(path);
+  return resolved == null ? false : parseMessagingPath(resolved) != null;
+}
+
+/**
+ * True only for the Messages directory route. Conversation routes return false.
+ *
+ * @param {string} [path]
+ * @returns {boolean}
+ */
+export function isMessagesIndexRoute(path) {
+  const resolved = runtimePath(path);
+  if (resolved == null) {
+    return false;
   }
-  return parseMessagingPath(path) != null;
+  const route = parseMessagingPath(resolved);
+  return !!route && route.kind == null;
+}
+
+function runtimePath(path) {
+  if (path != null) {
+    return path;
+  }
+  if (typeof m !== 'undefined' && m.route && typeof m.route.get === 'function') {
+    return m.route.get();
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    return window.location.pathname || '';
+  }
+  return null;
 }
 
 function normalizePath(path) {
@@ -73,4 +93,5 @@ export default {
   parseMessagingPath,
   conversationPath,
   isUnifiedMessagesRoute,
+  isMessagesIndexRoute,
 };

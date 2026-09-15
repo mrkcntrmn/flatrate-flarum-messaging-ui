@@ -7,6 +7,9 @@ flatrate-messaging-ui:
       search_placeholder: Search conversations
       compose: New message
       back: Back
+      back_to_messages: All messages
+      conversation_menu: Conversation menu
+      conversation_options: Conversation options
       sign_in_required: Sign in to view Messages.
       sign_in: Log In
       unavailable: Messages is not available because Live Chat and Direct Messages are not connected.

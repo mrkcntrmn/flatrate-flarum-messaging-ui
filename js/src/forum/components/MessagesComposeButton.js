@@ -1,10 +1,11 @@
 import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
-import { isUnifiedMessagesRoute } from '../utils/messagingRoutes.js';
+import { isMessagesIndexRoute } from '../utils/messagingRoutes.js';
 
 /**
  * Top-nav compose entry. Desktop uses HeaderSecondary; phone may pin a visible twin.
+ * Conversation routes own their right-side overflow menu instead.
  */
 export default class MessagesComposeButton extends Component {
   view() {
@@ -35,7 +36,7 @@ export default class MessagesComposeButton extends Component {
     if (!app.session.user) {
       return false;
     }
-    if (!isUnifiedMessagesRoute()) {
+    if (!isMessagesIndexRoute()) {
       return false;
     }
     const sources = app.flatrateMessaging ? app.flatrateMessaging.sources() : { direct: null };
