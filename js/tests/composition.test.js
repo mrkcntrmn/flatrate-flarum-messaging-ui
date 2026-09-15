@@ -105,6 +105,9 @@ test('shell renderConversation uses additive presentationVersion=2 context', () 
   assert.match(src, /syncDirectSelection/);
   assert.match(src, /MessagesConversationHeader/);
   assert.match(src, /MessagesPage-conversationPane--/);
+  assert.doesNotMatch(src, /syntheticCount/);
+  assert.doesNotMatch(src, /SyntheticConversationSurface/);
+  assert.doesNotMatch(src, /parseSyntheticCount/);
 });
 
 test('shell viewport CSS constrains page height and owns message scroll', () => {

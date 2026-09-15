@@ -7,7 +7,6 @@ import ConversationDirectory from './ConversationDirectory';
 import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
-import SyntheticConversationSurface from './SyntheticConversationSurface.js';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
 import providerConversationKey from '../utils/providerConversationKey.js';
@@ -214,19 +213,8 @@ export default class MessagesPage extends Page {
       conversation,
     };
 
-    // Local/disposable qualification only: ?syntheticCount=200 proves viewport ownership.
-    const syntheticCount = parseSyntheticCount(m.route.param('syntheticCount'));
     let pane = null;
-    if (syntheticCount != null) {
-      pane = (
-        <SyntheticConversationSurface
-          kind={selected.kind}
-          conversationKey={draftKey}
-          messageCount={syntheticCount}
-          seed={`qual-${selected.kind}`}
-        />
-      );
-    } else if (provider && typeof provider.renderConversation === 'function') {
+    if (provider && typeof provider.renderConversation === 'function') {
       pane = provider.renderConversation({
         key: selected.key,
         context,
@@ -312,15 +300,4 @@ export default class MessagesPage extends Page {
       },
     });
   }
-}
-
-function parseSyntheticCount(raw) {
-  if (raw == null || raw === '') {
-    return null;
-  }
-  const n = Number(raw);
-  if (!Number.isFinite(n) || n <= 0) {
-    return null;
-  }
-  return Math.min(Math.floor(n), 500);
 }

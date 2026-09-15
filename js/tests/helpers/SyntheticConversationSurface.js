@@ -2,7 +2,7 @@ import Component from 'flarum/common/Component';
 import {
   buildSyntheticMessages,
   SYNTHETIC_MESSAGE_COUNTS,
-} from '../fixtures/syntheticMessagingFixtures.js';
+} from '../../src/forum/fixtures/syntheticMessagingFixtures.js';
 import {
   isNearBottom,
   shouldAutoScrollIncoming,

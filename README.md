@@ -67,7 +67,7 @@ provider.renderConversation({
 
 Providers must keep rendering the accepted V1 surface when `presentationVersion` is absent. Viewport ownership (constrained shell height, message-viewport scroll, composer always visible) is a hard product invariant for V2.
 
-Local large-history qualification (disposable): append `?syntheticCount=200` on a conversation route to render the synthetic surface harness.
+Synthetic messaging fixtures remain available for automated tests only. Production Messages routes always render the authorized provider surface; there is no user-triggerable synthetic conversation URL.
 
 ## Scripts
 
