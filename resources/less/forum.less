@@ -32,12 +32,21 @@
   }
 
   .App-content {
+    position: relative;
     flex: 1 1 auto;
     min-height: 0 !important;
     height: auto !important;
     max-height: none;
     overflow: hidden;
     padding-bottom: 0;
+  }
+
+  // Mithril page root is a bare wrapper; pin it so Messages cannot grow the page.
+  .App-content > div:first-child {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   // Global discussion composer must not reserve page space on Messages.
