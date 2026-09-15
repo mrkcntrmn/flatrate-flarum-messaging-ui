@@ -6,21 +6,38 @@
   --messages-composer-max-height: 144px;
   --messages-row-min-height: 60px;
   --messages-near-bottom-px: 100px;
-  // Literal offset: Flarum's PHP less.php strips nested var() inside calc().
+  // Fallback only; preferred path is height:100% inside the flex App frame.
   --messages-header-offset: 52px;
   --messages-shell-height: ~"calc(100vh - 52px)";
   --messages-shell-height: ~"calc(100dvh - 52px)";
 }
 
-// Application frame: Messages fills the usable viewport; document must not grow with history.
+// Application frame: Messages fills remaining App space so phone drawer nav
+// cannot push document height past the viewport.
 .App--messages {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: ~"100vh";
+  height: ~"100dvh";
+  max-height: ~"100vh";
+  max-height: ~"100dvh";
+  min-height: 0 !important;
   overflow: hidden;
   // Flarum reserves bottom padding for the global discussion composer.
   padding-bottom: 0 !important;
 
+  .App-navigation {
+    flex: 0 0 auto;
+  }
+
   .App-content {
-    padding-bottom: 0;
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none;
     overflow: hidden;
+    padding-bottom: 0;
   }
 
   // Global discussion composer must not reserve page space on Messages.
@@ -31,8 +48,8 @@
 
 .MessagesPage,
 .MessagesShell {
-  height: var(--messages-shell-height);
-  max-height: var(--messages-shell-height);
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
   max-width: 100%;
   overflow: hidden;
@@ -663,8 +680,8 @@
   .MessagesShell {
     display: grid;
     grid-template-columns: var(--messages-directory-width) minmax(0, 1fr);
-    height: var(--messages-shell-height);
-    max-height: var(--messages-shell-height);
+    height: 100%;
+    max-height: 100%;
     min-height: 0;
     overflow: hidden;
   }
