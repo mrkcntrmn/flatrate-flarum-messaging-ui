@@ -1,15 +1,24 @@
 import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
+import Dropdown from 'flarum/common/components/Dropdown';
+import extractText from 'flarum/common/utils/extractText';
 import { readDisplayText } from '../utils/normalizeConversation.js';
+import buildShellHeaderOverflowItems, {
+  mergeHeaderOverflowItems,
+} from '../utils/buildShellHeaderOverflowItems.js';
 
 /**
- * Shell-owned conversation chrome header (mobile back + title).
+ * Shell-owned conversation chrome. Direct and Live share back | title | ⋮.
+ * Providers may append overflow items; they do not decide whether ⋮ exists.
  */
 export default class MessagesConversationHeader extends Component {
   view() {
-    const { kind, conversation, onBack } = this.attrs;
+    const { kind, conversation, onBack, providerOverflowItems = null } = this.attrs;
     const title = resolveHeaderTitle(kind, conversation);
+    const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_menu'));
+    const shellItems = buildShellHeaderOverflowItems({ onBack });
+    const items = mergeHeaderOverflowItems(shellItems, providerOverflowItems).toArray().filter(Boolean);
 
     return (
       <header className={'MessagesConversationHeader' + (kind ? ` MessagesConversationHeader--${kind}` : '')}>
@@ -31,6 +40,17 @@ export default class MessagesConversationHeader extends Component {
           )}
           <h2 className="MessagesConversationHeader-title">{title}</h2>
         </div>
+        <Dropdown
+          className="MessagesConversationHeader-overflow"
+          buttonClassName="Button Button--icon Button--flat MessagesConversationHeader-overflowToggle"
+          menuClassName="Dropdown-menu--right"
+          icon="fas fa-ellipsis-h"
+          caretIcon={null}
+          label={menuLabel}
+          accessibleToggleLabel={menuLabel}
+        >
+          {items}
+        </Dropdown>
       </header>
     );
   }
