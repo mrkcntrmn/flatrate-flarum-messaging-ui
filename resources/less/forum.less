@@ -484,13 +484,32 @@
   font-weight: 600;
 }
 
-.MessagesConversationHeader-menu {
+.MessagesConversationHeader-overflow {
   flex: 0 0 auto;
 }
 
-.MessagesConversationHeader-menuButton {
+.MessagesConversationHeader-back,
+.MessagesConversationHeader-overflowToggle {
+  flex: 0 0 auto;
   min-width: 44px;
   min-height: 44px;
+}
+
+.MessagesConversationHeader-overflowToggle {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+
+  &:hover,
+  &:focus,
+  &:focus-visible {
+    background: transparent !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
 }
 
 .FlatRateMessagesNav {
@@ -753,7 +772,7 @@
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-back,
-  .MessagesPage.viewing-conversation .MessagesConversationHeader-menuButton {
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-overflowToggle {
     color: inherit;
     background: transparent !important;
     box-shadow: none !important;

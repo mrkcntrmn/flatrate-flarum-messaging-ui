@@ -80,14 +80,36 @@ test('conversation header is shared back-title-overflow chrome', () => {
   assert.match(header, /MessagesConversationHeader-main/);
   assert.match(header, /MessagesConversationHeader-title/);
   assert.match(header, /Dropdown/);
-  assert.match(header, /MessagesConversationHeader-menu/);
-  assert.match(header, /fas fa-ellipsis-v/);
-  assert.match(header, /conversation_options/);
-  assert.match(header, /back_to_messages/);
+  assert.match(header, /MessagesConversationHeader-overflow/);
+  assert.match(header, /fas fa-ellipsis-h/);
+  assert.match(header, /conversation_menu/);
+  assert.match(header, /buildShellHeaderOverflowItems/);
+  assert.match(header, /mergeHeaderOverflowItems/);
+  // Overflow exists from shell items — not gated on provider item length.
+  assert.doesNotMatch(header, /providerOverflowItems\?\.length/);
+  assert.doesNotMatch(header, /overflowItems\.length\s*\?/);
+  assert.doesNotMatch(header, /items\.length\s*\?\s*\n?\s*<Dropdown/);
   const less = read('resources/less/forum.less');
   assert.match(less, /\.MessagesConversationHeader-back/);
-  assert.match(less, /\.MessagesConversationHeader-menuButton/);
+  assert.match(less, /\.MessagesConversationHeader-overflowToggle/);
   assert.match(less, /background:\s*transparent/);
+});
+
+test('shell owns baseline overflow actions and merges provider items', () => {
+  const util = read('js/src/forum/utils/buildShellHeaderOverflowItems.js');
+  assert.match(util, /allMessages/);
+  assert.match(util, /newMessage/);
+  assert.match(util, /back_to_messages/);
+  assert.match(util, /composeDirect/);
+  assert.match(util, /mergeHeaderOverflowItems/);
+  assert.match(util, /SHELL_OVERFLOW_KEYS/);
+  const page = read('js/src/forum/components/MessagesPage.js');
+  assert.match(page, /providerOverflowItems/);
+  assert.match(page, /headerOverflowItems/);
+  // Direct with null/empty provider contribution still renders shell overflow.
+  const header = read('js/src/forum/components/MessagesConversationHeader.js');
+  assert.match(header, /buildShellHeaderOverflowItems\(\{ onBack \}\)/);
+  assert.match(header, /mergeHeaderOverflowItems\(shellItems, providerOverflowItems\)/);
 });
 
 test('mobile directory search is pinned between nav and compose controls', () => {

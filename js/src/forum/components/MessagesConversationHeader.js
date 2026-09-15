@@ -2,18 +2,23 @@ import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import Dropdown from 'flarum/common/components/Dropdown';
+import extractText from 'flarum/common/utils/extractText';
 import { readDisplayText } from '../utils/normalizeConversation.js';
+import buildShellHeaderOverflowItems, {
+  mergeHeaderOverflowItems,
+} from '../utils/buildShellHeaderOverflowItems.js';
 
 /**
- * Shell-owned conversation chrome. Direct and Live conversations share the
- * same back / title / overflow layout; providers own only the body surface.
+ * Shell-owned conversation chrome. Direct and Live share back | title | ⋮.
+ * Providers may append overflow items; they do not decide whether ⋮ exists.
  */
 export default class MessagesConversationHeader extends Component {
   view() {
-    const { kind, conversation, onBack } = this.attrs;
+    const { kind, conversation, onBack, providerOverflowItems = null } = this.attrs;
     const title = resolveHeaderTitle(kind, conversation);
-    const sources = app.flatrateMessaging ? app.flatrateMessaging.sources() : { direct: null };
-    const canCompose = !!sources.direct;
+    const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_menu'));
+    const shellItems = buildShellHeaderOverflowItems({ onBack });
+    const items = mergeHeaderOverflowItems(shellItems, providerOverflowItems).toArray().filter(Boolean);
 
     return (
       <header className={'MessagesConversationHeader' + (kind ? ` MessagesConversationHeader--${kind}` : '')}>
@@ -36,34 +41,15 @@ export default class MessagesConversationHeader extends Component {
           <h2 className="MessagesConversationHeader-title">{title}</h2>
         </div>
         <Dropdown
-          className="MessagesConversationHeader-menu"
-          buttonClassName="Button Button--icon Button--flat MessagesConversationHeader-menuButton"
+          className="MessagesConversationHeader-overflow"
+          buttonClassName="Button Button--icon Button--flat MessagesConversationHeader-overflowToggle"
           menuClassName="Dropdown-menu--right"
-          icon="fas fa-ellipsis-v"
-          caretIcon=""
-          label={app.translator.trans('flatrate-messaging-ui.forum.page.conversation_options')}
-          accessibleToggleLabel={app.translator.trans('flatrate-messaging-ui.forum.page.conversation_options')}
+          icon="fas fa-ellipsis-h"
+          caretIcon={null}
+          label={menuLabel}
+          accessibleToggleLabel={menuLabel}
         >
-          {canCompose ? (
-            <Button
-              icon="fas fa-pen"
-              onclick={() => {
-                if (app.flatrateMessaging && typeof app.flatrateMessaging.composeDirect === 'function') {
-                  app.flatrateMessaging.composeDirect();
-                }
-              }}
-            >
-              {app.translator.trans('flatrate-messaging-ui.forum.page.compose')}
-            </Button>
-          ) : null}
-          <Button
-            icon="fas fa-inbox"
-            onclick={() => {
-              if (typeof onBack === 'function') onBack();
-            }}
-          >
-            {app.translator.trans('flatrate-messaging-ui.forum.page.back_to_messages')}
-          </Button>
+          {items}
         </Dropdown>
       </header>
     );

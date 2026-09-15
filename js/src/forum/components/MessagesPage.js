@@ -9,7 +9,7 @@ import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
 import MessagesComposeButton from './MessagesComposeButton.js';
 import { parseFilter } from '../utils/filterConversations.js';
-import { productMode } from '../utils/discoverSources.js';
+import discoverSources, { productMode } from '../utils/discoverSources.js';
 import directConversationPaneStatus from '../utils/directConversationPaneStatus.js';
 
 /** Additive V2 provider presentation contract (shell → providers). */
@@ -224,11 +224,23 @@ export default class MessagesPage extends Page {
   conversationChrome(body, { kind = null, conversation = null } = {}) {
     const paneClass =
       'MessagesPage-conversationPane' + (kind ? ` MessagesPage-conversationPane--${kind}` : '');
+    const sources = discoverSources();
+    const provider = kind === 'live' ? sources.live : kind === 'direct' ? sources.direct : null;
+    const selected = this.selectedFromRoute();
+    const providerOverflowItems =
+      provider && typeof provider.headerOverflowItems === 'function'
+        ? provider.headerOverflowItems({ key: selected?.key, conversation, kind })
+        : null;
 
     return (
       <div className={paneClass}>
         {kind ? (
-          <MessagesConversationHeader kind={kind} conversation={conversation} onBack={() => this.backToList()} />
+          <MessagesConversationHeader
+            kind={kind}
+            conversation={conversation}
+            providerOverflowItems={providerOverflowItems}
+            onBack={() => this.backToList()}
+          />
         ) : null}
         <div className="MessagesPage-conversationBody">
           <div className="MessagesProviderSurface">{body}</div>

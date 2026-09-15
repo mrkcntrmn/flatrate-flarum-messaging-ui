@@ -8,6 +8,7 @@ flatrate-messaging-ui:
       compose: New message
       back: Back
       back_to_messages: All messages
+      conversation_menu: Conversation menu
       conversation_options: Conversation options
       sign_in_required: Sign in to view Messages.
       sign_in: Log In
