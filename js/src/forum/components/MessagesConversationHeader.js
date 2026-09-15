@@ -24,11 +24,11 @@ export default class MessagesConversationHeader extends Component {
         <div className="MessagesConversationHeader-main">
           {conversation?.avatarUrl ? (
             <img className="MessagesConversationHeader-avatar" src={conversation.avatarUrl} alt="" />
-          ) : conversation?.icon ? (
-            <span className="MessagesConversationHeader-icon">
-              <i className={conversation.icon} />
+          ) : (
+            <span className="MessagesConversationHeader-icon" aria-hidden="true">
+              <i className={conversation?.icon || (kind === 'live' ? 'fas fa-comments' : 'fas fa-user')} />
             </span>
-          ) : null}
+          )}
           <h2 className="MessagesConversationHeader-title">{title}</h2>
         </div>
       </header>
