@@ -92,14 +92,36 @@ test('discovers providers from app.flatRateMessagingSources', () => {
   assert.doesNotMatch(src, /flatrateMessagingLive|flatrateMessagingDirect/);
 });
 
-test('shell renderConversation uses { key, context }', () => {
+test('shell renderConversation uses additive presentationVersion=2 context', () => {
   const src = read('components/MessagesPage.js');
-  assert.match(src, /renderConversation\(\{\s*key: selected\.key/);
-  assert.match(src, /context: \{ initialDraft, conversation \}/);
+  assert.match(src, /MESSAGES_PRESENTATION_VERSION\s*=\s*2/);
+  assert.match(src, /presentationVersion:\s*MESSAGES_PRESENTATION_VERSION/);
+  assert.match(src, /initialDraft/);
+  assert.match(src, /conversation/);
+  assert.match(src, /provider\.renderConversation\(\{\s*key: selected\.key,\s*context,/);
+  assert.match(src, /MessagesShell/);
+  assert.match(src, /MessagesProviderSurface/);
   assert.match(src, /directConversationPaneStatus/);
   assert.match(src, /syncDirectSelection/);
   assert.match(src, /MessagesConversationHeader/);
   assert.match(src, /MessagesPage-conversationPane--/);
+  assert.doesNotMatch(src, /syntheticCount/);
+  assert.doesNotMatch(src, /SyntheticConversationSurface/);
+  assert.doesNotMatch(src, /parseSyntheticCount/);
+});
+
+test('shell viewport CSS constrains page height and owns message scroll', () => {
+  const less = readFileSync(join(ROOT, 'resources/less/forum.less'), 'utf8');
+  assert.match(less, /--messages-shell-height:\s*~?"calc\(100dvh - 52px\)"/);
+  assert.match(less, /\.MessagesPage,\s*\n\.MessagesShell\s*\{[\s\S]*overflow:\s*hidden/);
+  assert.match(less, /\.MessagesMessageViewport\s*\{[\s\S]*overflow-y:\s*auto/);
+  assert.match(less, /\.MessagesComposer\s*\{[\s\S]*flex:\s*0\s*0\s*auto/);
+  assert.match(less, /--messages-directory-width:\s*320px/);
+  assert.match(less, /safe-area-inset-bottom/);
+  assert.match(less, /\.App--messages\s*\{[\s\S]*overflow:\s*hidden/);
+  assert.match(less, /\.App--messages\s*\{[\s\S]*display:\s*flex/);
+  assert.match(less, /\.App--messages[\s\S]*\.App-content\s*\{[\s\S]*min-height:\s*0\s*!important/);
+  assert.match(less, /\.App-content\s*>\s*div:first-child\s*\{[\s\S]*position:\s*absolute/);
 });
 
 test('directory rows are keyed Flarum components', () => {

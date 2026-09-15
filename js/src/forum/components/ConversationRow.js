@@ -26,9 +26,11 @@ export default class ConversationRow extends Component {
     const privacyIcon = privacy === 'private' ? 'fas fa-lock' : 'fas fa-globe';
     const activity = activityAt ? humanTime(new Date(activityAt)) : null;
 
+    const unread = Number(unreadCount) > 0;
+
     return (
       <Link
-        className={'ConversationRow' + (active ? ' is-active' : '')}
+        className={'ConversationRow' + (active ? ' is-active' : '') + (unread ? ' is-unread' : '')}
         href={href}
         title={title}
         aria-current={active ? 'page' : undefined}

@@ -50,6 +50,25 @@ app.flatRateMessagingSources.live = { /* listConversations, getUnreadTotal, rend
 app.flatRateMessagingSources.direct = { /* listConversations, getUnreadTotal, renderConversation, findConversationWithUser, startConversationWithUser */ };
 ```
 
+### V2 presentation context (additive)
+
+When the shell is V2-capable it passes:
+
+```js
+provider.renderConversation({
+  key,
+  context: {
+    presentationVersion: 2,
+    initialDraft,
+    conversation,
+  },
+});
+```
+
+Providers must keep rendering the accepted V1 surface when `presentationVersion` is absent. Viewport ownership (constrained shell height, message-viewport scroll, composer always visible) is a hard product invariant for V2.
+
+Synthetic messaging fixtures remain available for automated tests only. Production Messages routes always render the authorized provider surface; there is no user-triggerable synthetic conversation URL.
+
 ## Scripts
 
 ```bash

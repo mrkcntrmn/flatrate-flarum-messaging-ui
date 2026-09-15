@@ -7,10 +7,14 @@ import ConversationDirectory from './ConversationDirectory';
 import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
+import { BRAND_HREF, BRAND_TEXT } from './MessagesBrandLink.js';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
 import providerConversationKey from '../utils/providerConversationKey.js';
 import directConversationPaneStatus from '../utils/directConversationPaneStatus.js';
+
+/** Additive V2 provider presentation contract (shell → providers). */
+export const MESSAGES_PRESENTATION_VERSION = 2;
 
 export default class MessagesPage extends Page {
   oninit(vnode) {
@@ -80,11 +84,16 @@ export default class MessagesPage extends Page {
     if (sources.live) availableFilters.push('live');
 
     return (
-      <div className={'MessagesPage' + (viewing ? ' viewing-conversation' : '')}>
-        <aside className="MessagesPage-directory">
+      <div className={'MessagesPage MessagesShell' + (viewing ? ' viewing-conversation' : '')}>
+        <a className="MessagesBrandLink MessagesBrandLink--mobilePinned" href={BRAND_HREF} aria-label={BRAND_TEXT}>
+          {BRAND_TEXT}
+        </a>
+        <aside className="MessagesPage-directory MessagesDirectoryPane">
           {this.directoryView({ guest, mode, sources, state, conversations, selected, availableFilters })}
         </aside>
-        <section className="MessagesPage-conversation">{this.conversationView({ guest, mode, sources, state, selected })}</section>
+        <section className="MessagesPage-conversation MessagesConversationPane">
+          {this.conversationView({ guest, mode, sources, state, selected })}
+        </section>
       </div>
     );
   }
@@ -119,9 +128,12 @@ export default class MessagesPage extends Page {
         <header className="MessagesPage-directoryHeader">
           <h1 className="MessagesPage-title">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
           {oncompose ? (
-            <Button className="Button Button--primary" icon="fas fa-paper-plane" onclick={oncompose}>
-              {app.translator.trans('flatrate-messaging-ui.forum.page.compose')}
-            </Button>
+            <Button
+              className="Button Button--icon MessagesPage-compose"
+              icon="fas fa-pen"
+              aria-label={app.translator.trans('flatrate-messaging-ui.forum.page.compose')}
+              onclick={oncompose}
+            />
           ) : null}
         </header>
         <div className="MessagesPage-search">
@@ -199,13 +211,19 @@ export default class MessagesPage extends Page {
       this.consumedDraftKey = draftKey;
     }
 
-    const pane =
-      provider && typeof provider.renderConversation === 'function'
-        ? provider.renderConversation({
-            key: selected.key,
-            context: { initialDraft, conversation },
-          })
-        : null;
+    const context = {
+      presentationVersion: MESSAGES_PRESENTATION_VERSION,
+      initialDraft,
+      conversation,
+    };
+
+    let pane = null;
+    if (provider && typeof provider.renderConversation === 'function') {
+      pane = provider.renderConversation({
+        key: selected.key,
+        context,
+      });
+    }
 
     return this.conversationChrome(pane, { kind: selected.kind, conversation });
   }
@@ -219,7 +237,9 @@ export default class MessagesPage extends Page {
         {kind ? (
           <MessagesConversationHeader kind={kind} conversation={conversation} onBack={() => this.backToList()} />
         ) : null}
-        <div className="MessagesPage-conversationBody">{body}</div>
+        <div className="MessagesPage-conversationBody">
+          <div className="MessagesProviderSurface">{body}</div>
+        </div>
       </div>
     );
   }

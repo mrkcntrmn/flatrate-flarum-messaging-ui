@@ -5,7 +5,7 @@ flatrate-messaging-ui:
     page:
       title: Messages
       search_placeholder: Search conversations
-      compose: New message
+      compose: New direct message
       back: Back
       sign_in_required: Sign in to view Messages.
       sign_in: Log In

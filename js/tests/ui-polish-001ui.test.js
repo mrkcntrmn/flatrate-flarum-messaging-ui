@@ -23,6 +23,13 @@ test('brand link contract', () => {
   assert.match(index, /HeaderPrimary/);
   assert.match(index, /FlatRateMessagesBrand/);
   assert.match(index, /MessagesBrandLink/);
+  const page = read('js/src/forum/components/MessagesPage.js');
+  assert.match(page, /MessagesBrandLink--mobilePinned/);
+  assert.match(page, /BRAND_HREF/);
+  const less = read('resources/less/forum.less');
+  assert.match(less, /var\(--header-color/);
+  assert.match(less, /\.MessagesBrandLink--mobilePinned/);
+  assert.match(less, /DISPOSABLE_HEADER_THEME_DIFF|header color tokens|light and dark/i);
 });
 
 test('direct conversation pane is kind-scoped', () => {
