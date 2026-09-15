@@ -50,6 +50,25 @@ app.flatRateMessagingSources.live = { /* listConversations, getUnreadTotal, rend
 app.flatRateMessagingSources.direct = { /* listConversations, getUnreadTotal, renderConversation, findConversationWithUser, startConversationWithUser */ };
 ```
 
+### V2 presentation context (additive)
+
+When the shell is V2-capable it passes:
+
+```js
+provider.renderConversation({
+  key,
+  context: {
+    presentationVersion: 2,
+    initialDraft,
+    conversation,
+  },
+});
+```
+
+Providers must keep rendering the accepted V1 surface when `presentationVersion` is absent. Viewport ownership (constrained shell height, message-viewport scroll, composer always visible) is a hard product invariant for V2.
+
+Local large-history qualification (disposable): append `?syntheticCount=200` on a conversation route to render the synthetic surface harness.
+
 ## Scripts
 
 ```bash
