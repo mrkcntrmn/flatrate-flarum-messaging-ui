@@ -1,0 +1,46 @@
+name: Temporary messaging header bundle build
+
+on:
+  push:
+    branches: ['fix/messages-mobile-header']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/messages-mobile-header
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: js
+        run: npm ci
+
+      - name: Run JS tests
+        working-directory: js
+        run: npm test
+
+      - name: Build production bundle
+        working-directory: js
+        run: npm run build
+
+      - name: Commit generated bundle
+        run: |
+          git add js/dist/forum.js js/dist/forum.js.map
+          if git diff --cached --quiet; then
+            echo "Generated bundle already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build: refresh messaging forum bundle"
+          git push origin HEAD:fix/messages-mobile-header
