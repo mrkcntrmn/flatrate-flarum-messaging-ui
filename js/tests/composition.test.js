@@ -41,6 +41,39 @@ test('openDirectToUser does not call neoncube or copy the clipboard', () => {
   assert.doesNotMatch(src, /navigator\.clipboard|clipboard-copy|execCommand\(['"]copy['"]\)/);
 });
 
+test('composeDirect is the single owner for blank Direct compose', async () => {
+  const src = read('createMessagingService.js');
+  assert.match(src, /composeDirect\s*\(\)\s*\{/);
+  assert.match(src, /startConversationWithUser\(null/);
+
+  const navigations = [];
+  const drafts = [];
+  const starts = [];
+  const direct = {
+    startConversationWithUser(user, { onConversationResolved }) {
+      starts.push(user);
+      onConversationResolved({ id: '77' }, { draft: 'draft-from-modal' });
+    },
+  };
+  const service = createMessagingService({
+    app: { session: { user: { id: () => '1' } }, flatRateMessagingSources: { direct } },
+    state: { stashInitialDraft: (id, draft) => drafts.push({ id, draft }) },
+    route: (path, replace) => navigations.push({ path, replace }),
+  });
+  service.composeDirect();
+  assert.deepEqual(starts, [null]);
+  assert.deepEqual(navigations, [{ path: '/messages/direct/77', replace: false }]);
+  assert.deepEqual(drafts, [{ id: '77', draft: 'draft-from-modal' }]);
+
+  const noDirect = createMessagingService({
+    app: { session: { user: { id: () => '1' } }, flatRateMessagingSources: {} },
+    state: { stashInitialDraft() {} },
+    route: (path) => navigations.push({ path }),
+  });
+  noDirect.composeDirect();
+  assert.equal(navigations.length, 1);
+});
+
 test('openDirectToUser guest/missing user is a no-op; existing 1:1 navigates', async () => {
   const navigations = [];
   const drafts = [];

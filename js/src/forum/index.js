@@ -1,13 +1,12 @@
 import app from 'flarum/forum/app';
 import { extend } from 'flarum/common/extend';
-import HeaderPrimary from 'flarum/forum/components/HeaderPrimary';
 import HeaderSecondary from 'flarum/forum/components/HeaderSecondary';
 import UserControls from 'flarum/forum/utils/UserControls';
 import PostControls from 'flarum/forum/utils/PostControls';
 import Button from 'flarum/common/components/Button';
 import MessagesPage from './components/MessagesPage.js';
 import MessagesNavButton from './components/MessagesNavButton.js';
-import MessagesBrandLink from './components/MessagesBrandLink.js';
+import MessagesComposeButton from './components/MessagesComposeButton.js';
 import MessagingState from './state/MessagingState.js';
 import createMessagingService from './createMessagingService.js';
 import canOfferMessageAction from './utils/canOfferMessageAction.js';
@@ -27,18 +26,14 @@ app.initializers.add('flatrate-messaging-ui', () => {
     state: app.flatrateMessagingState,
   });
 
-  extend(HeaderPrimary.prototype, 'items', function (items) {
-    if (!isUnifiedMessagesRoute()) {
-      return;
-    }
-    items.add('FlatRateMessagesBrand', <MessagesBrandLink />, 50);
-  });
-
   extend(HeaderSecondary.prototype, 'items', function (items) {
     if (!app.session.user) {
       return;
     }
     items.add('FlatRateMessages', <MessagesNavButton />, 5);
+    if (isUnifiedMessagesRoute()) {
+      items.add('FlatRateMessagesCompose', <MessagesComposeButton />, 4);
+    }
   });
 
   extend(UserControls, 'userControls', function (items, user) {

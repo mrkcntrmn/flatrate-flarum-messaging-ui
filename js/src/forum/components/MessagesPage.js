@@ -7,10 +7,9 @@ import ConversationDirectory from './ConversationDirectory';
 import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
-import { BRAND_HREF, BRAND_TEXT } from './MessagesBrandLink.js';
+import MessagesComposeButton from './MessagesComposeButton.js';
 import { parseFilter } from '../utils/filterConversations.js';
 import { productMode } from '../utils/discoverSources.js';
-import providerConversationKey from '../utils/providerConversationKey.js';
 import directConversationPaneStatus from '../utils/directConversationPaneStatus.js';
 
 /** Additive V2 provider presentation contract (shell → providers). */
@@ -85,9 +84,7 @@ export default class MessagesPage extends Page {
 
     return (
       <div className={'MessagesPage MessagesShell' + (viewing ? ' viewing-conversation' : '')}>
-        <a className="MessagesBrandLink MessagesBrandLink--mobilePinned" href={BRAND_HREF} aria-label={BRAND_TEXT}>
-          {BRAND_TEXT}
-        </a>
+        <MessagesComposeButton mobilePinned={true} />
         <aside className="MessagesPage-directory MessagesDirectoryPane">
           {this.directoryView({ guest, mode, sources, state, conversations, selected, availableFilters })}
         </aside>
@@ -102,7 +99,7 @@ export default class MessagesPage extends Page {
     if (guest) {
       return (
         <div className="MessagesPage-status">
-          <h1 className="MessagesPage-title">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
+          <h1 className="MessagesPage-title visually-hidden">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
           <p>{app.translator.trans('flatrate-messaging-ui.forum.page.sign_in_required')}</p>
           <Button className="Button Button--primary" onclick={() => app.modal.show(LogInModal)}>
             {app.translator.trans('flatrate-messaging-ui.forum.page.sign_in')}
@@ -114,28 +111,24 @@ export default class MessagesPage extends Page {
     if (mode === 'unavailable') {
       return (
         <div className="MessagesPage-status">
-          <h1 className="MessagesPage-title">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
+          <h1 className="MessagesPage-title visually-hidden">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
           <p>{app.translator.trans('flatrate-messaging-ui.forum.page.unavailable')}</p>
         </div>
       );
     }
 
     const hasError = !!(state && (state.errors.live || state.errors.direct));
-    const oncompose = sources.direct ? () => this.composeDirect(sources.direct) : null;
+    const oncompose = sources.direct
+      ? () => {
+          if (app.flatrateMessaging && typeof app.flatrateMessaging.composeDirect === 'function') {
+            app.flatrateMessaging.composeDirect();
+          }
+        }
+      : null;
 
     return (
       <div>
-        <header className="MessagesPage-directoryHeader">
-          <h1 className="MessagesPage-title">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
-          {oncompose ? (
-            <Button
-              className="Button Button--icon MessagesPage-compose"
-              icon="fas fa-pen"
-              aria-label={app.translator.trans('flatrate-messaging-ui.forum.page.compose')}
-              onclick={oncompose}
-            />
-          ) : null}
-        </header>
+        <h1 className="MessagesPage-title visually-hidden">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
         <div className="MessagesPage-search">
           <input
             className="FormControl"
@@ -287,21 +280,5 @@ export default class MessagesPage extends Page {
       params.filter = this.filter;
     }
     m.route.set(app.route('flatrate-messaging.index', params));
-  }
-
-  composeDirect(direct) {
-    if (!direct || typeof direct.startConversationWithUser !== 'function') {
-      return;
-    }
-    direct.startConversationWithUser(null, {
-      onConversationResolved(conversation, meta = {}) {
-        const key = providerConversationKey(conversation);
-        if (!key) return;
-        if (meta.draft && app.flatrateMessagingState) {
-          app.flatrateMessagingState.stashInitialDraft(key, meta.draft);
-        }
-        m.route.set('/messages/direct/' + key, null, { replace: false });
-      },
-    });
   }
 }

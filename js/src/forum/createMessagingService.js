@@ -83,6 +83,29 @@ export default function createMessagingService({ app, route, state }) {
         },
       });
     },
+
+    /**
+     * Blank Direct compose (recipient picker). Single owner for top-nav + empty-state.
+     */
+    composeDirect() {
+      const direct = this.sources().direct;
+      if (!direct || typeof direct.startConversationWithUser !== 'function') {
+        return;
+      }
+
+      direct.startConversationWithUser(null, {
+        onConversationResolved(conversation, meta = {}) {
+          const id = providerConversationKey(conversation);
+          if (!id) {
+            return;
+          }
+          if (meta.draft) {
+            state.stashInitialDraft(id, meta.draft);
+          }
+          navigate('/messages/direct/' + id, false);
+        },
+      });
+    },
   };
 }
 

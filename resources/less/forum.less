@@ -10,6 +10,8 @@
   --messages-header-offset: 52px;
   --messages-shell-height: ~"calc(100vh - 52px)";
   --messages-shell-height: ~"calc(100dvh - 52px)";
+  // Adaptive lime for Live directory metadata (readable on light and dark themes).
+  --messages-live-accent: color-mix(in srgb, #84cc16 72%, var(--text-color));
 }
 
 // Application frame: Messages fills remaining App space so phone drawer nav
@@ -118,30 +120,30 @@
   overflow: hidden;
 }
 
-.MessagesPage-directoryHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px;
-  flex: 0 0 auto;
+.MessagesPage-title.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
-.MessagesPage-compose {
+.MessagesComposeButton {
   flex: 0 0 auto;
   min-width: 44px;
   min-height: 44px;
 }
 
-.MessagesPage-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  min-width: 0;
+.MessagesComposeButton--mobilePinned {
+  display: none;
 }
 
 .MessagesPage-search {
-  padding: 0 12px 8px;
+  padding: 12px 12px 8px;
   flex: 0 0 auto;
 }
 
@@ -243,6 +245,14 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
+}
+
+.ConversationRow--live .ConversationRow-kind {
+  color: var(--messages-live-accent);
+}
+
+.ConversationRow--live .ConversationRow-privacy i {
+  color: var(--messages-live-accent);
 }
 
 .ConversationRow-privacy-text,
@@ -424,6 +434,20 @@
   flex: 0 0 auto;
   min-width: 44px;
   min-height: 44px;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+
+  &:hover,
+  &:focus,
+  &:focus-visible {
+    background: transparent !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
 }
 
 .MessagesConversationHeader-main {
@@ -458,42 +482,6 @@
   white-space: nowrap;
   font-size: 16px;
   font-weight: 600;
-}
-
-// Centered Messages-route brand in the existing Flarum header.
-// Use header color tokens so light and dark forum themes both remain readable.
-// Hardcoded white is production-dark-only and vanishes on light disposable headers.
-.App-header {
-  position: relative;
-}
-
-.MessagesBrandLink {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 2;
-  color: var(--header-color, #ffffff);
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 1.2;
-  text-decoration: none;
-  white-space: nowrap;
-  pointer-events: auto;
-}
-
-.MessagesBrandLink:hover,
-.MessagesBrandLink:focus,
-.MessagesBrandLink:focus-visible {
-  color: var(--header-color, #ffffff);
-  text-decoration: none;
-  opacity: 0.92;
-}
-
-// Phone: HeaderPrimary lives inside the off-canvas drawer, so pin a Messages-shell
-// brand copy in the visible top chrome (outside the transformed drawer).
-.MessagesBrandLink--mobilePinned {
-  display: none;
 }
 
 .FlatRateMessagesNav {
@@ -674,19 +662,22 @@
     left: 20px;
   }
 
-  .MessagesBrandLink--mobilePinned {
-    display: block;
+  .MessagesComposeButton--mobilePinned {
+    display: inline-flex;
     position: fixed;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 4px;
+    right: 8px;
     z-index: 1100;
-    color: var(--header-color, #111111);
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 1.2;
-    text-decoration: none;
-    white-space: nowrap;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+  }
+
+  // HeaderSecondary compose is often folded into the phone drawer; keep one visible pin.
+  .App-header .item-FlatRateMessagesCompose {
+    display: none;
   }
 
   .MessagesPage.viewing-conversation .MessagesPage-directory {
@@ -766,13 +757,8 @@
 
 @media (max-width: 360px) {
   .MessagesPage,
-  .ConversationRow,
-  .MessagesPage-directoryHeader {
+  .ConversationRow {
     overflow-x: hidden;
-  }
-
-  .MessagesBrandLink {
-    font-size: 15px;
   }
 }
 

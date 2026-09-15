@@ -30,7 +30,13 @@ export default class ConversationRow extends Component {
 
     return (
       <Link
-        className={'ConversationRow' + (active ? ' is-active' : '') + (unread ? ' is-unread' : '')}
+        className={
+          'ConversationRow' +
+          (kind === 'live' ? ' ConversationRow--live' : '') +
+          (kind === 'direct' ? ' ConversationRow--direct' : '') +
+          (active ? ' is-active' : '') +
+          (unread ? ' is-unread' : '')
+        }
         href={href}
         title={title}
         aria-current={active ? 'page' : undefined}
