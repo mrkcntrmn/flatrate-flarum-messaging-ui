@@ -17,15 +17,15 @@ test('compose control uses plus icon, not pencil', () => {
   assert.match(compose, /composeDirect/);
 });
 
-test('directory search has magnifier and Search placeholder', () => {
+test('directory search has magnifier and people/messages placeholder', () => {
   const page = read('js/src/forum/components/MessagesPage.js');
   assert.match(page, /MessagesPage-searchIcon/);
   assert.match(page, /fas fa-search/);
   assert.match(page, /MessagesPage-searchInput/);
   assert.match(page, /aria-hidden="true"/);
   const locale = read('locale/en.yml');
-  assert.match(locale, /search_placeholder:\s*Search\s*$/m);
-  assert.doesNotMatch(locale, /search_placeholder:\s*Search conversations/);
+  assert.match(locale, /search_placeholder:\s*Search messages or people/);
+  assert.doesNotMatch(locale, /search_placeholder:\s*Search\s*$/m);
   const less = read('resources/less/forum.less');
   assert.match(less, /\.MessagesPage-searchIcon\s*\{[\s\S]*pointer-events:\s*none/);
   assert.match(less, /padding-left:\s*38px/);

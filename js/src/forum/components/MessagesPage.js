@@ -7,8 +7,12 @@ import ConversationDirectory from './ConversationDirectory';
 import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
 import MessagesComposeButton from './MessagesComposeButton.js';
+import MessagesDiscoveryResults from './MessagesDiscoveryResults.js';
 import discoverSources, { productMode } from '../utils/discoverSources.js';
 import directConversationPaneStatus from '../utils/directConversationPaneStatus.js';
+import { createPeopleSearchController, findUsersByQuery, MIN_REMOTE_USER_QUERY_LENGTH } from '../utils/peopleSearch.js';
+import { collectFollowedUsers, suggestPeople } from '../utils/suggestPeople.js';
+import flattenDiscoveryOptions from '../utils/flattenDiscoveryOptions.js';
 
 /** Additive V2 provider presentation contract (shell → providers). */
 export const MESSAGES_PRESENTATION_VERSION = 2;
@@ -22,6 +26,12 @@ export default class MessagesPage extends Page {
     this.query = '';
     this.consumedDraftKey = null;
 
+    this.searchFocused = false;
+    this.people = [];
+    this.peopleStatus = 'idle';
+    this.activeDiscoveryIndex = -1;
+    this.peopleSearch = null;
+
     const state = app.flatrateMessagingState;
     if (state) {
       state.setFilter('all');
@@ -30,6 +40,7 @@ export default class MessagesPage extends Page {
 
     this.normalizeDirectoryFilterParam();
     this.syncDirectSelection();
+    this.initPeopleSearch();
 
     if (app.session.user && app.flatrateMessaging) {
       Promise.resolve(app.flatrateMessaging.refresh()).then(() => {
@@ -37,6 +48,20 @@ export default class MessagesPage extends Page {
         m.redraw();
       });
     }
+  }
+
+  onremove() {
+    if (this.peopleSearch) {
+      this.peopleSearch.cancel();
+    }
+  }
+
+  initPeopleSearch() {
+    const actorId = app.session.user ? app.session.user.id() : null;
+    this.peopleSearch = createPeopleSearchController({
+      actorId,
+      findUsers: (q) => findUsersByQuery(app, q),
+    });
   }
 
   onbeforeupdate() {
@@ -139,6 +164,17 @@ export default class MessagesPage extends Page {
         }
       : null;
 
+    const discoveryActive = this.isDiscoveryActive();
+    const discoveryPeople = this.discoveryPeople(state);
+    const discoveryConversations = conversations;
+    const options = flattenDiscoveryOptions(discoveryConversations, discoveryPeople);
+    const showDiscoveryEmpty =
+      discoveryActive &&
+      String(this.query || '').trim().length > 0 &&
+      discoveryConversations.length === 0 &&
+      discoveryPeople.length === 0 &&
+      this.peopleStatus !== 'loading';
+
     return (
       <div>
         <h1 className="MessagesPage-title visually-hidden">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
@@ -147,23 +183,157 @@ export default class MessagesPage extends Page {
           <input
             className="FormControl MessagesPage-searchInput"
             type="search"
+            role="combobox"
+            aria-label={app.translator.trans('flatrate-messaging-ui.forum.page.search_aria')}
+            aria-expanded={discoveryActive ? 'true' : 'false'}
+            aria-controls="messages-discovery-results"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              this.activeDiscoveryIndex >= 0 ? `messages-discovery-option-${this.activeDiscoveryIndex}` : null
+            }
             placeholder={app.translator.trans('flatrate-messaging-ui.forum.page.search_placeholder')}
             value={this.query}
-            oninput={(e) => {
-              this.query = e.target.value;
-              if (state) state.setQuery(this.query);
+            onfocus={() => {
+              this.searchFocused = true;
+              m.redraw();
             }}
+            onblur={() => {
+              // Delay so mousedown on a result can fire first.
+              setTimeout(() => {
+                this.searchFocused = false;
+                this.activeDiscoveryIndex = -1;
+                m.redraw();
+              }, 150);
+            }}
+            oninput={(e) => this.onSearchInput(e.target.value, state)}
+            onkeydown={(e) => this.onSearchKeydown(e, options)}
           />
         </div>
         {hasError ? <div className="MessagesPage-error">{app.translator.trans('flatrate-messaging-ui.forum.page.load_error')}</div> : null}
         {state && state.loading ? <LoadingIndicator /> : null}
-        {!state?.loading && conversations.length === 0 ? (
-          <MessagingEmptyState oncompose={oncompose} />
-        ) : (
-          <ConversationDirectory conversations={conversations} selected={selected} />
-        )}
+        <div id="messages-discovery-results">
+          {discoveryActive ? (
+            <MessagesDiscoveryResults
+              conversations={discoveryConversations}
+              people={discoveryPeople}
+              selected={selected}
+              peopleHeading={
+                String(this.query || '').trim()
+                  ? app.translator.trans('flatrate-messaging-ui.forum.page.people_heading')
+                  : app.translator.trans('flatrate-messaging-ui.forum.page.suggested_people_heading')
+              }
+              conversationsHeading={app.translator.trans('flatrate-messaging-ui.forum.page.conversations_heading')}
+              emptyLabel={app.translator.trans('flatrate-messaging-ui.forum.page.discovery_empty')}
+              loadingPeople={this.peopleStatus === 'loading'}
+              activeIndex={this.activeDiscoveryIndex}
+              showEmpty={showDiscoveryEmpty}
+              onActivateConversation={(conversation) => this.activateConversation(conversation)}
+              onActivatePerson={(person) => this.activatePerson(person)}
+            />
+          ) : !state?.loading && conversations.length === 0 ? (
+            <MessagingEmptyState oncompose={oncompose} />
+          ) : (
+            <ConversationDirectory conversations={conversations} selected={selected} />
+          )}
+        </div>
       </div>
     );
+  }
+
+  isDiscoveryActive() {
+    return this.searchFocused || String(this.query || '').trim().length > 0;
+  }
+
+  discoveryPeople(state) {
+    const q = String(this.query || '').trim();
+    if (q.length >= MIN_REMOTE_USER_QUERY_LENGTH) {
+      return this.people;
+    }
+    if (!this.searchFocused && !q) {
+      return [];
+    }
+    // Focused + empty (or short query): bounded suggestions.
+    const actorId = app.session.user ? app.session.user.id() : null;
+    const allConversations = state?.conversations || [];
+    return suggestPeople({
+      conversations: allConversations,
+      followedUsers: collectFollowedUsers(app),
+      actorId,
+    });
+  }
+
+  onSearchInput(value, state) {
+    this.query = value;
+    this.activeDiscoveryIndex = -1;
+    if (state) state.setQuery(this.query);
+    if (this.peopleSearch) {
+      this.peopleSearch.schedule(this.query, (result) => {
+        this.people = result.users || [];
+        this.peopleStatus = result.status;
+        m.redraw();
+      });
+    }
+  }
+
+  onSearchKeydown(e, options) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.clearDiscovery();
+      return;
+    }
+
+    if (!options.length) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.activeDiscoveryIndex = Math.min(this.activeDiscoveryIndex + 1, options.length - 1);
+      if (this.activeDiscoveryIndex < 0) this.activeDiscoveryIndex = 0;
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.activeDiscoveryIndex = Math.max(this.activeDiscoveryIndex - 1, 0);
+      return;
+    }
+
+    if (e.key === 'Enter' && this.activeDiscoveryIndex >= 0) {
+      e.preventDefault();
+      const option = options[this.activeDiscoveryIndex];
+      if (!option) return;
+      if (option.type === 'conversation') {
+        this.activateConversation(option.conversation);
+      } else if (option.type === 'person') {
+        this.activatePerson(option.person);
+      }
+    }
+  }
+
+  clearDiscovery() {
+    this.query = '';
+    this.people = [];
+    this.peopleStatus = 'idle';
+    this.activeDiscoveryIndex = -1;
+    this.searchFocused = false;
+    if (app.flatrateMessagingState) {
+      app.flatrateMessagingState.setQuery('');
+    }
+    if (this.peopleSearch) {
+      this.peopleSearch.cancel();
+    }
+    m.redraw();
+  }
+
+  activateConversation(conversation) {
+    if (!conversation || !app.flatrateMessaging) return;
+    this.clearDiscovery();
+    app.flatrateMessaging.openConversation(conversation.kind, conversation.sourceId || conversation.key);
+  }
+
+  activatePerson(person) {
+    if (!person?.user || !app.flatrateMessaging) return;
+    this.clearDiscovery();
+    Promise.resolve(app.flatrateMessaging.openDirectToUser(person.user)).then(() => m.redraw());
   }
 
   conversationView({ guest, mode, sources, state, selected }) {
