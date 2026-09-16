@@ -4,7 +4,12 @@ flatrate-messaging-ui:
       messages: Messages
     page:
       title: Messages
-      search_placeholder: Search
+      search_placeholder: Search messages or people
+      search_aria: Search messages or people
+      conversations_heading: Conversations
+      people_heading: People
+      suggested_people_heading: Suggested people
+      discovery_empty: No conversations or people found
       compose: New message
       back: Back
       back_to_messages: All messages

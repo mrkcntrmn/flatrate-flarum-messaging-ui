@@ -170,6 +170,120 @@
   box-sizing: border-box;
 }
 
+.MessagesDiscovery {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 12px;
+}
+
+.MessagesDiscovery-section {
+  min-width: 0;
+}
+
+.MessagesDiscovery-heading {
+  margin: 12px 12px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+
+.MessagesDiscovery-list,
+.MessagesDiscovery-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.MessagesDiscovery-option,
+.MessagesDiscovery-person {
+  min-width: 0;
+}
+
+.MessagesDiscovery-option.is-active .MessagesDiscovery-optionButton,
+.MessagesDiscovery-person.is-active .MessagesDiscovery-optionButton {
+  background: var(--control-bg);
+}
+
+.MessagesDiscovery-optionButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.MessagesDiscovery-optionAvatar,
+.MessagesDiscovery-personAvatar {
+  flex: 0 0 auto;
+
+  .Avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
+
+.MessagesDiscovery-optionText,
+.MessagesDiscovery-personText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.MessagesDiscovery-optionTitle,
+.MessagesDiscovery-personName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.MessagesDiscovery-optionMeta,
+.MessagesDiscovery-personHint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted-color);
+  font-size: 12px;
+}
+
+.MessagesDiscovery-unread {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.MessagesDiscovery-empty,
+.MessagesDiscovery-status {
+  padding: 16px 12px;
+  color: var(--muted-color);
+  font-size: 14px;
+}
+
 .ConversationDirectory {
   display: flex;
   flex-direction: column;
