@@ -4,7 +4,7 @@ flatrate-messaging-ui:
       messages: Messages
     page:
       title: Messages
-      search_placeholder: Search conversations
+      search_placeholder: Search
       compose: New message
       back: Back
       back_to_messages: All messages
@@ -32,6 +32,8 @@ flatrate-messaging-ui:
       public_room: Public room
       private: Private
       unread: "{count} unread"
+      open: Open
+      copy_link: Copy conversation link
     actions:
       message: Message
     profile:
