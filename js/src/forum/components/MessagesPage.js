@@ -4,11 +4,9 @@ import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import LogInModal from 'flarum/forum/components/LogInModal';
 import ConversationDirectory from './ConversationDirectory';
-import MessagingFilters from './MessagingFilters';
 import MessagingEmptyState from './MessagingEmptyState';
 import MessagesConversationHeader from './MessagesConversationHeader.js';
 import MessagesComposeButton from './MessagesComposeButton.js';
-import { parseFilter } from '../utils/filterConversations.js';
 import discoverSources, { productMode } from '../utils/discoverSources.js';
 import directConversationPaneStatus from '../utils/directConversationPaneStatus.js';
 
@@ -19,16 +17,18 @@ export default class MessagesPage extends Page {
   oninit(vnode) {
     super.oninit(vnode);
     this.bodyClass = 'App--messages';
-    this.filter = parseFilter(m.route.param('filter'));
+    // Directory is always the canonical "all" view — no visible filter strip.
+    this.filter = 'all';
     this.query = '';
     this.consumedDraftKey = null;
 
     const state = app.flatrateMessagingState;
     if (state) {
-      state.setFilter(this.filter);
+      state.setFilter('all');
       state.setQuery('');
     }
 
+    this.normalizeDirectoryFilterParam();
     this.syncDirectSelection();
 
     if (app.session.user && app.flatrateMessaging) {
@@ -40,7 +40,23 @@ export default class MessagesPage extends Page {
   }
 
   onbeforeupdate() {
+    this.normalizeDirectoryFilterParam();
     this.syncDirectSelection();
+  }
+
+  /**
+   * Strip stale ?filter= from /messages so an invisible filter cannot linger.
+   */
+  normalizeDirectoryFilterParam() {
+    if (this.selectedFromRoute()) {
+      return;
+    }
+    if (!m.route.param('filter')) {
+      return;
+    }
+    const params = { ...m.route.param() };
+    delete params.filter;
+    m.route.set(app.route('flatrate-messaging.index', params), null, { replace: true });
   }
 
   syncDirectSelection() {
@@ -78,15 +94,12 @@ export default class MessagesPage extends Page {
     const mode = productMode(sources);
     const state = app.flatrateMessagingState;
     const conversations = guest || mode === 'unavailable' ? [] : state ? state.visibleConversations() : [];
-    const availableFilters = ['all', 'unread'];
-    if (sources.direct) availableFilters.push('direct');
-    if (sources.live) availableFilters.push('live');
 
     return (
       <div className={'MessagesPage MessagesShell' + (viewing ? ' viewing-conversation' : '')}>
         <MessagesComposeButton mobilePinned={true} />
         <aside className="MessagesPage-directory MessagesDirectoryPane">
-          {this.directoryView({ guest, mode, sources, state, conversations, selected, availableFilters })}
+          {this.directoryView({ guest, mode, sources, state, conversations, selected })}
         </aside>
         <section className="MessagesPage-conversation MessagesConversationPane">
           {this.conversationView({ guest, mode, sources, state, selected })}
@@ -95,7 +108,7 @@ export default class MessagesPage extends Page {
     );
   }
 
-  directoryView({ guest, mode, sources, state, conversations, selected, availableFilters }) {
+  directoryView({ guest, mode, sources, state, conversations, selected }) {
     if (guest) {
       return (
         <div className="MessagesPage-status">
@@ -130,8 +143,9 @@ export default class MessagesPage extends Page {
       <div>
         <h1 className="MessagesPage-title visually-hidden">{app.translator.trans('flatrate-messaging-ui.forum.page.title')}</h1>
         <div className="MessagesPage-search">
+          <i className="fas fa-search MessagesPage-searchIcon" aria-hidden="true" />
           <input
-            className="FormControl"
+            className="FormControl MessagesPage-searchInput"
             type="search"
             placeholder={app.translator.trans('flatrate-messaging-ui.forum.page.search_placeholder')}
             value={this.query}
@@ -141,7 +155,6 @@ export default class MessagesPage extends Page {
             }}
           />
         </div>
-        <MessagingFilters filter={this.filter} available={availableFilters} onchange={(filter) => this.applyFilter(filter)} />
         {hasError ? <div className="MessagesPage-error">{app.translator.trans('flatrate-messaging-ui.forum.page.load_error')}</div> : null}
         {state && state.loading ? <LoadingIndicator /> : null}
         {!state?.loading && conversations.length === 0 ? (
@@ -263,35 +276,15 @@ export default class MessagesPage extends Page {
     return null;
   }
 
-  applyFilter(filter) {
-    this.filter = parseFilter(filter);
-    if (app.flatrateMessagingState) {
-      app.flatrateMessagingState.setFilter(this.filter);
-    }
-    const params = { ...m.route.param() };
-    if (this.filter === 'all') {
-      delete params.filter;
-    } else {
-      params.filter = this.filter;
-    }
-    const selected = this.selectedFromRoute();
-    if (selected && selected.kind === 'live') {
-      m.route.set(app.route('flatrate-messaging.live', params));
-    } else if (selected && selected.kind === 'direct') {
-      m.route.set(app.route('flatrate-messaging.direct', params));
-    } else {
-      m.route.set(app.route('flatrate-messaging.index', params));
-    }
-  }
-
   backToList() {
     const params = { ...m.route.param() };
     delete params.roomKey;
     delete params.conversationId;
-    if (this.filter === 'all') {
-      delete params.filter;
-    } else {
-      params.filter = this.filter;
+    // Returning to directory always clears filter so nothing remains silently applied.
+    delete params.filter;
+    this.filter = 'all';
+    if (app.flatrateMessagingState) {
+      app.flatrateMessagingState.setFilter('all');
     }
     m.route.set(app.route('flatrate-messaging.index', params));
   }

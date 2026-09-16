@@ -37,7 +37,8 @@ test('compose lives in directory app bar via canonical service, not conversation
   assert.match(index, /FlatRateMessagesCompose/);
   assert.match(index, /MessagesComposeButton/);
   const compose = read('js/src/forum/components/MessagesComposeButton.js');
-  assert.match(compose, /fas fa-pen/);
+  assert.match(compose, /fas fa-plus/);
+  assert.doesNotMatch(compose, /fas fa-pen/);
   assert.match(compose, /composeDirect/);
   assert.match(compose, /isMessagesIndexRoute/);
   assert.doesNotMatch(compose, /isUnifiedMessagesRoute/);
@@ -123,8 +124,13 @@ test('mobile directory search is pinned between nav and compose controls', () =>
   );
   assert.match(
     less,
-    /\.MessagesPage:not\(\.viewing-conversation\) \.MessagesPage-search \.FormControl\s*\{[\s\S]*height:\s*44px/
+    /\.MessagesPage:not\(\.viewing-conversation\) \.MessagesPage-searchInput,[\s\S]*\.MessagesPage-search \.FormControl\s*\{[\s\S]*height:\s*44px/
   );
+  // App-bar overlays must stay below Flarum modal stack (--zindex-modal: 1050).
+  assert.match(less, /--messages-appbar-z:\s*~?"?calc\(var\(--zindex-header\) \+ 1\)"?/);
+  assert.match(less, /z-index:\s*var\(--messages-appbar-z\)/);
+  assert.doesNotMatch(less, /z-index:\s*1100/);
+  assert.doesNotMatch(less, /z-index:\s*1101/);
 });
 
 test('mobile conversation header replaces site chrome for Direct and Live', () => {

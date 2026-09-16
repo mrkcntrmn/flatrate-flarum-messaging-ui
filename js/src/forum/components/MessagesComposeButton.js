@@ -21,7 +21,7 @@ export default class MessagesComposeButton extends Component {
     return (
       <Button
         className={className}
-        icon="fas fa-pen"
+        icon="fas fa-plus"
         aria-label={app.translator.trans('flatrate-messaging-ui.forum.page.compose')}
         onclick={() => {
           if (app.flatrateMessaging && typeof app.flatrateMessaging.composeDirect === 'function') {

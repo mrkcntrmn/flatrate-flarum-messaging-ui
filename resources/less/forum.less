@@ -12,6 +12,10 @@
   --messages-shell-height: ~"calc(100dvh - 52px)";
   // Adaptive lime for Live directory metadata (readable on light and dark themes).
   --messages-live-accent: color-mix(in srgb, #84cc16 72%, var(--text-color));
+  // App-bar overlays must sit above page content / header (1000) but BELOW
+  // Flarum ModalManager (--zindex-modal: 1050) and modal backdrop (1040).
+  // Prior 1100/1101 values stacked Messages search/compose over New Message.
+  --messages-appbar-z: ~"calc(var(--zindex-header) + 1)";
 }
 
 // Application frame: Messages fills remaining App space so phone drawer nav
@@ -143,26 +147,27 @@
 }
 
 .MessagesPage-search {
+  position: relative;
   padding: 12px 12px 8px;
   flex: 0 0 auto;
 }
 
+.MessagesPage-searchIcon {
+  position: absolute;
+  left: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+  color: var(--muted-color);
+}
+
+.MessagesPage-searchInput,
 .MessagesPage-search .FormControl {
   width: 100%;
   max-width: 100%;
-}
-
-.MessagingFilters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 12px 12px;
-  flex: 0 0 auto;
-}
-
-.MessagingFilters-button {
-  min-width: 0;
-  min-height: 44px;
+  padding-left: 38px;
+  box-sizing: border-box;
 }
 
 .ConversationDirectory {
@@ -179,16 +184,26 @@
 
 .ConversationRow {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: stretch;
+  gap: 0;
   min-width: 0;
   max-width: 100%;
   min-height: var(--messages-row-min-height);
   overflow: hidden;
-  padding: 10px 12px;
   text-align: left;
   color: inherit;
+}
+
+.ConversationRow-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 4px 10px 12px;
+  color: inherit;
   text-decoration: none;
+  overflow: hidden;
 }
 
 .ConversationRow.is-active {
@@ -272,6 +287,26 @@
   font-size: 11px;
   font-weight: 700;
   text-align: center;
+}
+
+.ConversationRow-overflow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+.ConversationRow-overflowToggle {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  color: var(--muted-color);
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
 }
 
 .MessagingEmptyState {
@@ -695,7 +730,7 @@
     position: fixed;
     top: 4px;
     right: 8px;
-    z-index: 1100;
+    z-index: var(--messages-appbar-z);
     min-width: 44px;
     min-height: 44px;
     align-items: center;
@@ -709,22 +744,29 @@
   }
 
   // Directory route: reuse the existing search control as the center app-bar
-  // surface between Flarum's hamburger and the pinned compose pencil.
+  // surface between Flarum's hamburger and the pinned compose plus.
+  // z-index must remain below Flarum ModalManager (--zindex-modal: 1050).
   .MessagesPage:not(.viewing-conversation) .MessagesPage-search {
     position: fixed;
     top: 4px;
     left: 60px;
     right: 60px;
-    z-index: 1100;
+    z-index: var(--messages-appbar-z);
     padding: 0;
   }
 
+  .MessagesPage:not(.viewing-conversation) .MessagesPage-searchIcon {
+    left: 13px;
+  }
+
+  .MessagesPage:not(.viewing-conversation) .MessagesPage-searchInput,
   .MessagesPage:not(.viewing-conversation) .MessagesPage-search .FormControl {
     box-sizing: border-box;
     width: 100%;
     height: 44px;
     min-height: 44px;
     margin: 0;
+    padding-left: 38px;
   }
 
   .MessagesPage.viewing-conversation .MessagesPage-directory {
@@ -742,7 +784,7 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1101;
+    z-index: var(--messages-appbar-z);
     box-sizing: border-box;
     height: var(--messages-header-offset);
     min-height: var(--messages-header-offset);
