@@ -75,7 +75,11 @@ export default class ConversationRow extends Component {
                 <i className={privacyIcon} aria-hidden="true" />
               </span>
               {live ? (
-                <span className="ConversationRow-livePresence" aria-label={livePresenceAria}>
+                <span
+                  className="ConversationRow-livePresence"
+                  aria-label={livePresenceAria}
+                  style={{ color: 'var(--messages-live-accent)', fontWeight: 600, whiteSpace: 'nowrap' }}
+                >
                   {livePresenceText}
                 </span>
               ) : activity ? (
