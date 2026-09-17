@@ -12,6 +12,7 @@ const liveRaw = {
   roomKey: 'general',
   title: 'General',
   unreadCount: 2,
+  liveUserCount: 7,
   activityAt: '2026-09-14T12:00:00.000Z',
   preview: 'secret preview',
   body: 'secret body',
@@ -39,6 +40,7 @@ test('normalizes Live row', () => {
   assert.equal(row.privacy, 'public');
   assert.equal(row.privacyLabel, 'Public room');
   assert.equal(row.unreadCount, 2);
+  assert.equal(row.liveUserCount, 7);
   assert.equal(row.icon, 'fas fa-comments');
   assert.equal(row.activityAt, Date.parse('2026-09-14T12:00:00.000Z'));
 });
@@ -52,6 +54,7 @@ test('normalizes Direct row', () => {
   assert.equal(row.privacy, 'private');
   assert.equal(row.privacyLabel, 'Private');
   assert.equal(row.unreadCount, 4);
+  assert.equal(row.liveUserCount, null);
   assert.equal(row.avatarUrl, 'https://example.test/a.png');
   assert.ok(row.identities.includes('tech_327'));
 });
@@ -86,6 +89,7 @@ test('normalizes exact Live and Direct provider row shapes', () => {
       title: 'FlatRate.wiki Live',
       activityAt: '2026-09-14T12:00:00.000Z',
       unreadCount: 3,
+      liveUserCount: 12,
       isPublic: true,
       userId: null,
       roomKey: 'community-general-live',
@@ -94,8 +98,10 @@ test('normalizes exact Live and Direct provider row shapes', () => {
   );
   assert.equal(live.id, 'live:community-general-live');
   assert.equal(live.sourceId, 'community-general-live');
+  assert.equal(live.title, 'FlatRate.wiki');
   assert.equal(live.privacy, 'public');
   assert.equal(live.unreadCount, 3);
+  assert.equal(live.liveUserCount, 12);
 
   const direct = normalizeConversation(
     {
@@ -116,6 +122,7 @@ test('normalizes exact Live and Direct provider row shapes', () => {
   assert.equal(direct.privacy, 'private');
   assert.equal(direct.title, 'tech_327');
   assert.equal(direct.unreadCount, 2);
+  assert.equal(direct.liveUserCount, null);
 });
 
 test('row contract source ignores body/preview', () => {
@@ -123,10 +130,11 @@ test('row contract source ignores body/preview', () => {
   assert.match(src, /title/);
   assert.match(src, /privacy/);
   assert.match(src, /unreadCount/);
+  assert.match(src, /liveUserCount/);
   assert.doesNotMatch(src, /\.body\b|\.preview\b|lastMessage/);
 });
 
-test('translated Live title children are not room keys', () => {
+test('translated primary Live title canonicalizes to FlatRate.wiki', () => {
   const row = normalizeConversation(
     {
       kind: 'live',
@@ -138,7 +146,7 @@ test('translated Live title children are not room keys', () => {
     },
     'live'
   );
-  assert.equal(row.title, 'FlatRate.wiki Live');
+  assert.equal(row.title, 'FlatRate.wiki');
   assert.equal(row.sourceId, 'community-general-live');
   assert.notEqual(row.title, 'community-general-live');
   assert.ok(row.identities.includes('community-general-live'));
@@ -154,5 +162,5 @@ test('primary Live room falls back when title is the room key', () => {
     },
     'live'
   );
-  assert.equal(row.title, 'FlatRate.wiki Live');
+  assert.equal(row.title, 'FlatRate.wiki');
 });

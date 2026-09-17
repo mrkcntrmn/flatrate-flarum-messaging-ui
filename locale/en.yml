@@ -32,8 +32,8 @@ flatrate-messaging-ui:
       direct: Direct
       live: Live
     row:
-      live: LIVE
-      direct: DIRECT
+      live: PUBLIC
+      direct: PRIVATE
       public_room: Public room
       private: Private
       unread: "{count} unread"

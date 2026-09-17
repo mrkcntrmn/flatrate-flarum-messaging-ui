@@ -11,7 +11,8 @@ import buildShellDirectoryOverflowItems, {
 } from '../utils/buildShellDirectoryOverflowItems.js';
 
 /**
- * Directory row contract: title, type, privacy, activity, unread, avatar/icon, ⋯ menu.
+ * Directory row contract: title, type/privacy state, activity, unread,
+ * avatar/icon, optional Live presence count, and ⋯ menu.
  * Body / preview fields are ignored even if a provider attaches them.
  *
  * Root is NOT a Link — overflow is a sibling of ConversationRow-link so nested
@@ -20,13 +21,13 @@ import buildShellDirectoryOverflowItems, {
 export default class ConversationRow extends Component {
   view() {
     const conversation = this.attrs.conversation || {};
-    const { title, kind, privacy, privacyLabel, activityAt, unreadCount, avatarUrl, icon, sourceId } = conversation;
+    const { title, kind, privacy, privacyLabel, activityAt, unreadCount, liveUserCount, avatarUrl, icon, sourceId } = conversation;
     const active = !!this.attrs.active;
     const href = conversationPath(kind, sourceId);
-    const kindLabel =
-      kind === 'direct'
-        ? app.translator.trans('flatrate-messaging-ui.forum.row.direct')
-        : app.translator.trans('flatrate-messaging-ui.forum.row.live');
+    const live = kind === 'live';
+    const kindLabel = app.translator.trans(
+      live ? 'flatrate-messaging-ui.forum.row.live' : 'flatrate-messaging-ui.forum.row.direct'
+    );
     const privacyText =
       privacyLabel ||
       (privacy === 'private'
@@ -35,6 +36,10 @@ export default class ConversationRow extends Component {
     const privacyIcon = privacy === 'private' ? 'fas fa-lock' : 'fas fa-globe';
     const activity = activityAt ? humanTime(new Date(activityAt)) : null;
     const unread = Number(unreadCount) > 0;
+    const count = Number(liveUserCount);
+    const hasLiveCount = live && liveUserCount != null && Number.isFinite(count) && count >= 0;
+    const livePresenceText = hasLiveCount ? `${Math.floor(count)} LIVE` : 'LIVE';
+    const livePresenceAria = hasLiveCount ? `${Math.floor(count)} users live` : 'Live room';
     const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_options'));
     const overflowItems = this.overflowItems(conversation).toArray().filter(Boolean);
 
@@ -42,7 +47,7 @@ export default class ConversationRow extends Component {
       <div
         className={
           'ConversationRow' +
-          (kind === 'live' ? ' ConversationRow--live' : '') +
+          (live ? ' ConversationRow--live' : '') +
           (kind === 'direct' ? ' ConversationRow--direct' : '') +
           (active ? ' is-active' : '') +
           (unread ? ' is-unread' : '')
@@ -59,19 +64,27 @@ export default class ConversationRow extends Component {
             <img className="ConversationRow-avatar" src={avatarUrl} alt="" />
           ) : (
             <span className="ConversationRow-icon" aria-hidden="true">
-              <i className={icon || (kind === 'live' ? 'fas fa-comments' : 'fas fa-user')} />
+              <i className={icon || (live ? 'fas fa-comments' : 'fas fa-user')} />
             </span>
           )}
           <span className="ConversationRow-body">
             <span className="ConversationRow-title">{title}</span>
             <span className="ConversationRow-meta">
               <span className="ConversationRow-kind">{kindLabel}</span>
-              <span aria-hidden="true"> · </span>
-              <span className="ConversationRow-privacy" aria-label={privacyText}>
+              <span className="ConversationRow-privacy" aria-label={privacyText} title={privacyText}>
                 <i className={privacyIcon} aria-hidden="true" />
-                <span className="ConversationRow-privacy-text">{privacyText}</span>
               </span>
-              {activity ? <span className="ConversationRow-activity">{activity}</span> : null}
+              {live ? (
+                <span
+                  className="ConversationRow-livePresence"
+                  aria-label={livePresenceAria}
+                  style={{ color: 'var(--messages-live-accent)', fontWeight: 600, whiteSpace: 'nowrap' }}
+                >
+                  {livePresenceText}
+                </span>
+              ) : activity ? (
+                <span className="ConversationRow-activity">{activity}</span>
+              ) : null}
             </span>
           </span>
           {unreadCount > 0 ? (
