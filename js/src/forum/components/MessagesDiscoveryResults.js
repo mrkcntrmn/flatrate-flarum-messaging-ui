@@ -34,10 +34,11 @@ export default class MessagesDiscoveryResults extends Component {
             {conversations.map((conversation) => {
               const optionIndex = index++;
               const active = optionIndex === activeIndex;
-              const kindLabel = conversation.kind === 'live' ? 'Live' : 'Direct';
-              const privacy =
-                conversation.privacyLabel ||
-                (conversation.isPublic === false || conversation.privacy === 'private' ? 'Private' : conversation.kind === 'live' ? 'Public' : null);
+              const live = conversation.kind === 'live';
+              const count = Number(conversation.liveUserCount);
+              const hasLiveCount = live && conversation.liveUserCount != null && Number.isFinite(count) && count >= 0;
+              const liveText = hasLiveCount ? `${Math.floor(count)} LIVE` : 'LIVE';
+              const activity = conversation.activityAt ? humanTime(new Date(conversation.activityAt)) : null;
               return (
                 <li
                   key={conversation.id}
@@ -62,16 +63,22 @@ export default class MessagesDiscoveryResults extends Component {
                         <img className="Avatar" src={conversation.avatarUrl} alt="" />
                       ) : (
                         <span className="ConversationRow-icon" aria-hidden="true">
-                          <i className={conversation.kind === 'live' ? 'fas fa-comments' : 'fas fa-user'} />
+                          <i className={live ? 'fas fa-comments' : 'fas fa-user'} />
                         </span>
                       )}
                     </span>
                     <span className="MessagesDiscovery-optionText">
                       <span className="MessagesDiscovery-optionTitle">{conversation.title}</span>
                       <span className="MessagesDiscovery-optionMeta">
-                        {kindLabel}
-                        {privacy ? ` · ${privacy}` : ''}
-                        {conversation.activityAt ? ` · ${humanTime(new Date(conversation.activityAt))}` : ''}
+                        {live ? (
+                          <span style={{ color: 'var(--messages-live-accent)' }}>
+                            PUBLIC · <i className="fas fa-globe" aria-hidden="true" /> {liveText}
+                          </span>
+                        ) : (
+                          <span>
+                            PRIVATE · <i className="fas fa-lock" aria-hidden="true" />{activity ? ` ${activity}` : ''}
+                          </span>
+                        )}
                       </span>
                     </span>
                     {conversation.unreadCount > 0 ? (
