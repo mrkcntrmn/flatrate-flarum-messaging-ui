@@ -7,7 +7,7 @@
  * @returns {object|null}
  */
 const PRIMARY_LIVE_ROOM_KEY = 'community-general-live';
-const PRIMARY_LIVE_TITLE = 'FlatRate.wiki Live';
+const PRIMARY_LIVE_TITLE = 'FlatRate.wiki';
 
 export default function normalizeConversation(raw, kindHint) {
   if (raw == null || typeof raw !== 'object') {
@@ -38,6 +38,7 @@ export default function normalizeConversation(raw, kindHint) {
     privacyLabel: privacy === 'private' ? 'Private' : 'Public room',
     activityAt: resolveActivityAt(raw),
     unreadCount: resolveUnreadCount(raw),
+    liveUserCount: resolveLiveUserCount(raw, kind),
     avatarUrl: resolveAvatarUrl(raw),
     icon: typeof raw.icon === 'string' && raw.icon ? raw.icon : null,
   };
@@ -99,7 +100,7 @@ function resolveTitle(raw, kind, sourceId) {
   let title = candidates.find((value) => value) || null;
 
   if (kind === 'live' && String(sourceId) === PRIMARY_LIVE_ROOM_KEY) {
-    if (!title || title === PRIMARY_LIVE_ROOM_KEY) {
+    if (!title || title === PRIMARY_LIVE_ROOM_KEY || title === 'FlatRate.wiki Live') {
       return PRIMARY_LIVE_TITLE;
     }
   }
@@ -189,6 +190,14 @@ function resolveUnreadCount(raw) {
   const value = raw.unreadCount ?? raw.unReadCount ?? raw.unread_count ?? raw.unread ?? 0;
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function resolveLiveUserCount(raw, kind) {
+  if (kind !== 'live') return null;
+  const value = raw.liveUserCount ?? raw.live_user_count ?? null;
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
 }
 
 function resolveAvatarUrl(raw) {
