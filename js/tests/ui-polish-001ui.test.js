@@ -199,3 +199,40 @@ test('primary Live label canonicalizes for directory and no body preview regress
   assert.equal('body' in row, false);
   assert.ok(isUnifiedMessagesRoute('/messages/live/community-general-live'));
 });
+
+test('directory Live presence consumes liveUserCount with LIVE fallback', () => {
+  const rowSrc = read('js/src/forum/components/ConversationRow.js');
+  assert.match(rowSrc, /liveUserCount/);
+  assert.match(rowSrc, /hasLiveCount/);
+  assert.match(rowSrc, /\$\{Math\.floor\(count\)\} LIVE/);
+  assert.match(rowSrc, /livePresenceText = hasLiveCount \? `\$\{Math\.floor\(count\)\} LIVE` : 'LIVE'/);
+  assert.match(rowSrc, /ConversationRow-livePresence/);
+  assert.doesNotMatch(rowSrc, /ConversationRow-privacy-text/);
+
+  const locale = read('locale/en.yml');
+  assert.match(locale, /\n\s+live: PUBLIC\n/);
+  assert.match(locale, /\n\s+direct: PRIVATE\n/);
+
+  const withCount = normalizeConversation(
+    {
+      kind: 'live',
+      roomKey: 'community-general-live',
+      title: 'FlatRate.wiki Live',
+      liveUserCount: 1,
+    },
+    'live'
+  );
+  assert.equal(withCount.title, 'FlatRate.wiki');
+  assert.equal(withCount.liveUserCount, 1);
+
+  const withoutCount = normalizeConversation(
+    {
+      kind: 'live',
+      roomKey: 'community-general-live',
+      title: 'FlatRate.wiki Live',
+    },
+    'live'
+  );
+  assert.equal(withoutCount.title, 'FlatRate.wiki');
+  assert.equal(withoutCount.liveUserCount, null);
+});
