@@ -73,6 +73,21 @@ test('Live directory accent uses adaptive lime token', () => {
   assert.match(less, /#84cc16/);
   assert.match(less, /\.ConversationRow--live \.ConversationRow-kind/);
   assert.match(less, /\.ConversationRow--live \.ConversationRow-privacy i/);
+  const row = read('js/src/forum/components/ConversationRow.js');
+  assert.match(row, /ConversationRow-livePresence/);
+  assert.match(row, /var\(--messages-live-accent\)/);
+  assert.match(row, /livePresenceText/);
+  assert.match(row, /users live/);
+});
+
+test('directory status labels are PUBLIC for Live and PRIVATE for Direct', () => {
+  const locale = read('locale/en.yml');
+  assert.match(locale, /\n\s+live: PUBLIC\n/);
+  assert.match(locale, /\n\s+direct: PRIVATE\n/);
+  const row = read('js/src/forum/components/ConversationRow.js');
+  assert.match(row, /fas fa-globe/);
+  assert.match(row, /fas fa-lock/);
+  assert.doesNotMatch(row, /ConversationRow-privacy-text/);
 });
 
 test('conversation header is shared back-title-overflow chrome', () => {
@@ -164,20 +179,22 @@ test('direct polish CSS is Messages-scoped and leaves legacy ConversationsList a
   assert.doesNotMatch(less, /\.ConversationsList\s+\.chat/);
 });
 
-test('primary Live label fallback and no body preview regression', () => {
+test('primary Live label canonicalizes for directory and no body preview regresses', () => {
   const row = normalizeConversation(
     {
       kind: 'live',
       key: 'community-general-live',
       title: ['FlatRate.wiki Live'],
       roomKey: 'community-general-live',
+      liveUserCount: 4,
       preview: 'secret',
       body: 'secret',
     },
     'live'
   );
-  assert.equal(row.title, 'FlatRate.wiki Live');
+  assert.equal(row.title, 'FlatRate.wiki');
   assert.equal(row.sourceId, 'community-general-live');
+  assert.equal(row.liveUserCount, 4);
   assert.equal('preview' in row, false);
   assert.equal('body' in row, false);
   assert.ok(isUnifiedMessagesRoute('/messages/live/community-general-live'));
