@@ -743,15 +743,13 @@
     max-width: 78%;
   }
 
-  .message-content.me,
-  .message-content.message-content--own,
-  li.message-content.me {
+  // Direct provider contract: own = .my-message, remote = .other-message
+  .message-content.my-message {
     align-self: flex-end;
     align-items: flex-end;
   }
 
-  .message-content:not(.me),
-  li.message-content:not(.me) {
+  .message-content.other-message {
     align-self: flex-start;
     align-items: flex-start;
   }
@@ -763,6 +761,10 @@
     color: var(--muted-color);
     font-size: 11px;
     line-height: 1.3;
+  }
+
+  .message-content.my-message .message-data {
+    justify-content: flex-end;
   }
 
   .message-text-and-indicators {
@@ -786,10 +788,13 @@
     white-space: pre-wrap;
   }
 
-  .message-content.me .message-text,
-  .message-content.me p,
-  li.message-content.me .message-text {
-    background: color-mix(in srgb, var(--primary-color) 18%, var(--control-bg));
+  .message-content.my-message .message-text,
+  .message-content.my-message p {
+    background: color-mix(
+      in srgb,
+      var(--primary-color) 18%,
+      var(--control-bg)
+    );
   }
 
   .message-content img,
