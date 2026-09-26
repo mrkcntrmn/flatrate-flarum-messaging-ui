@@ -236,3 +236,53 @@ test('directory Live presence consumes liveUserCount with LIVE fallback', () => 
   assert.equal(withoutCount.title, 'FlatRate.wiki');
   assert.equal(withoutCount.liveUserCount, null);
 });
+
+test('Live conversation header status reuses liveUserCount without inventing zero', async () => {
+  const { default: resolveLiveHeaderStatus } = await import('../src/forum/utils/resolveLiveHeaderStatus.js');
+
+  assert.equal(
+    resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 1 }),
+    'PUBLIC 🌐 LIVE 1'
+  );
+  assert.equal(
+    resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }),
+    'PUBLIC 🌐 LIVE 0'
+  );
+  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public' }), 'PUBLIC 🌐 LIVE');
+  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: null }), 'PUBLIC 🌐 LIVE');
+  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: undefined }), 'PUBLIC 🌐 LIVE');
+  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: Number.NaN }), 'PUBLIC 🌐 LIVE');
+  assert.equal(resolveLiveHeaderStatus('direct', { privacy: 'private', liveUserCount: 3 }), null);
+  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'private', liveUserCount: 3 }), null);
+
+  const header = read('js/src/forum/components/MessagesConversationHeader.js');
+  assert.match(header, /MessagesConversationHeader-copy/);
+  assert.match(header, /MessagesConversationHeader-liveStatus/);
+  assert.match(header, /resolveLiveHeaderStatus/);
+  assert.match(header, /return 'FlatRate\.wiki'/);
+  assert.doesNotMatch(header, /return 'FlatRate\.wiki Live'/);
+});
+
+test('mobile conversation header uses equal 44px side slots for geometric centering', () => {
+  const less = read('resources/less/forum.less');
+  assert.match(less, /--messages-live-accent/);
+  assert.match(less, /\.MessagesConversationHeader-liveStatus\s*\{[\s\S]*var\(--messages-live-accent\)/);
+  assert.match(
+    less,
+    /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader\s*\{[\s\S]*grid-template-columns:\s*44px minmax\(0,\s*1fr\) 44px/
+  );
+  assert.match(
+    less,
+    /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader-back\s*\{[\s\S]*grid-column:\s*1[\s\S]*width:\s*44px/
+  );
+  assert.match(
+    less,
+    /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader-main\s*\{[\s\S]*grid-column:\s*2/
+  );
+  assert.match(
+    less,
+    /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader-overflow\s*\{[\s\S]*grid-column:\s*3[\s\S]*width:\s*44px/
+  );
+  assert.match(less, /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader-copy/);
+  assert.match(less, /back \| title \| overflow|44px \| 1fr \| 44px/);
+});
