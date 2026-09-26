@@ -607,6 +607,12 @@
   flex: 1 1 auto;
 }
 
+.MessagesConversationHeader-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .MessagesConversationHeader-avatar,
 .MessagesConversationHeader-icon {
   flex: 0 0 auto;
@@ -631,6 +637,16 @@
   white-space: nowrap;
   font-size: 16px;
   font-weight: 600;
+}
+
+.MessagesConversationHeader-liveStatus {
+  color: var(--messages-live-accent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .MessagesConversationHeader-overflow {
@@ -896,9 +912,14 @@
     display: none;
   }
 
-  // Conversation route: this shared shell header replaces the normal mobile
-  // hamburger/compose chrome with back | title | overflow for Direct + Live.
+  // Conversation route: back | title | overflow via equal-width
+  // 44px | 1fr | 44px grid so the title/status is geometrically centered
+  // between back and overflow for Direct + Live.
   .MessagesPage.viewing-conversation .MessagesConversationHeader {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
+    column-gap: 0;
     position: fixed;
     top: 0;
     left: 0;
@@ -907,19 +928,30 @@
     box-sizing: border-box;
     height: var(--messages-header-offset);
     min-height: var(--messages-header-offset);
-    padding: 4px 8px;
+    padding: 4px 0;
     gap: 0;
     background: var(--header-bg);
     color: var(--header-control-color);
     border-bottom: 1px solid var(--control-bg);
   }
 
-  .MessagesConversationHeader-back {
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-back {
     display: inline-flex;
+    grid-column: 1;
+    justify-self: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-main {
+    grid-column: 2;
+    justify-self: stretch;
     justify-content: center;
+    min-width: 0;
+    margin: 0;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-avatar,
@@ -927,9 +959,38 @@
     display: none;
   }
 
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-copy {
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+  }
+
   .MessagesPage.viewing-conversation .MessagesConversationHeader-title {
+    width: 100%;
     color: inherit;
     text-align: center;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-liveStatus {
+    width: 100%;
+    text-align: center;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-overflow {
+    grid-column: 3;
+    justify-self: center;
+    width: 44px;
+    min-width: 44px;
+    margin: 0;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader-overflowToggle {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-back,
