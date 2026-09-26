@@ -42,14 +42,20 @@ export default class MessagesConversationHeader extends Component {
           )}
           <div className="MessagesConversationHeader-copy">
             <h2 className="MessagesConversationHeader-title">{title}</h2>
-            {liveStatus ? <div className="MessagesConversationHeader-liveStatus">{liveStatus}</div> : null}
+            {liveStatus ? (
+              <div className="MessagesConversationHeader-liveStatus">
+                <span>{liveStatus.privacy}</span>
+                <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
+                <span>{liveStatus.live}</span>
+              </div>
+            ) : null}
           </div>
         </div>
         <Dropdown
           className="MessagesConversationHeader-overflow"
           buttonClassName="Button Button--icon Button--flat MessagesConversationHeader-overflowToggle"
           menuClassName="Dropdown-menu--right"
-          icon="fas fa-ellipsis-h"
+          icon="fas fa-ellipsis-v"
           caretIcon={null}
           label={menuLabel}
           accessibleToggleLabel={menuLabel}

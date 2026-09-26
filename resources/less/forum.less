@@ -12,6 +12,8 @@
   --messages-shell-height: ~"calc(100dvh - 52px)";
   // Adaptive lime for Live directory metadata (readable on light and dark themes).
   --messages-live-accent: color-mix(in srgb, #84cc16 72%, var(--text-color));
+  // Pure lime for the Live earth/globe icon (must stay vivid; not mixed with text).
+  --messages-live-globe: #84cc16;
   // App-bar overlays must sit above page content / header (1000) but BELOW
   // Flarum ModalManager (--zindex-modal: 1050) and modal backdrop (1040).
   // Prior 1100/1101 values stacked Messages search/compose over New Message.
@@ -581,11 +583,21 @@
 .MessagesConversationHeader-back {
   display: none;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   min-width: 44px;
   min-height: 44px;
+  padding: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
   border: 0 !important;
+
+  .Button-icon,
+  .icon {
+    margin: 0 !important;
+    width: auto;
+    line-height: 1;
+  }
 
   &:hover,
   &:focus,
@@ -640,6 +652,10 @@
 }
 
 .MessagesConversationHeader-liveStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
   color: var(--messages-live-accent);
   font-size: 12px;
   font-weight: 600;
@@ -647,6 +663,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.MessagesConversationHeader-liveGlobe {
+  color: var(--messages-live-globe);
+  font-size: 11px;
+  line-height: 1;
 }
 
 .MessagesConversationHeader-overflow {
@@ -661,9 +683,20 @@
 }
 
 .MessagesConversationHeader-overflowToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
   border: 0 !important;
+
+  .Button-icon,
+  .icon {
+    margin: 0 !important;
+    width: auto;
+    line-height: 1;
+  }
 
   &:hover,
   &:focus,
@@ -937,6 +970,8 @@
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-back {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
     grid-column: 1;
     justify-self: center;
     width: 44px;
@@ -944,6 +979,7 @@
     height: 44px;
     min-height: 44px;
     margin: 0;
+    padding: 0 !important;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-main {
@@ -974,6 +1010,7 @@
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-liveStatus {
     width: 100%;
+    justify-content: center;
     text-align: center;
   }
 
@@ -986,11 +1023,15 @@
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-overflowToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 44px;
     min-width: 44px;
     height: 44px;
     min-height: 44px;
     margin: 0;
+    padding: 0 !important;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-back,
@@ -999,6 +1040,11 @@
     background: transparent !important;
     box-shadow: none !important;
     border: 0 !important;
+
+    .Button-icon,
+    .icon {
+      margin: 0 !important;
+    }
   }
 
   .MessagesPage-directory,

@@ -97,7 +97,8 @@ test('conversation header is shared back-title-overflow chrome', () => {
   assert.match(header, /MessagesConversationHeader-title/);
   assert.match(header, /Dropdown/);
   assert.match(header, /MessagesConversationHeader-overflow/);
-  assert.match(header, /fas fa-ellipsis-h/);
+  assert.match(header, /fas fa-ellipsis-v/);
+  assert.doesNotMatch(header, /fas fa-ellipsis-h/);
   assert.match(header, /conversation_menu/);
   assert.match(header, /buildShellHeaderOverflowItems/);
   assert.match(header, /mergeHeaderOverflowItems/);
@@ -109,6 +110,10 @@ test('conversation header is shared back-title-overflow chrome', () => {
   assert.match(less, /\.MessagesConversationHeader-back/);
   assert.match(less, /\.MessagesConversationHeader-overflowToggle/);
   assert.match(less, /background:\s*transparent/);
+  assert.match(
+    less,
+    /\.MessagesConversationHeader-back\s*\{[\s\S]*align-items:\s*center[\s\S]*justify-content:\s*center[\s\S]*padding:\s*0\s*!important/
+  );
 });
 
 test('shell owns baseline overflow actions and merges provider items', () => {
@@ -240,24 +245,39 @@ test('directory Live presence consumes liveUserCount with LIVE fallback', () => 
 test('Live conversation header status reuses liveUserCount without inventing zero', async () => {
   const { default: resolveLiveHeaderStatus } = await import('../src/forum/utils/resolveLiveHeaderStatus.js');
 
-  assert.equal(
-    resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 1 }),
-    'PUBLIC 🌐 LIVE 1'
-  );
-  assert.equal(
-    resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }),
-    'PUBLIC 🌐 LIVE 0'
-  );
-  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public' }), 'PUBLIC 🌐 LIVE');
-  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: null }), 'PUBLIC 🌐 LIVE');
-  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: undefined }), 'PUBLIC 🌐 LIVE');
-  assert.equal(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: Number.NaN }), 'PUBLIC 🌐 LIVE');
+  assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 1 }), {
+    privacy: 'PUBLIC',
+    live: 'LIVE 1',
+  });
+  assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }), {
+    privacy: 'PUBLIC',
+    live: 'LIVE 0',
+  });
+  assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public' }), {
+    privacy: 'PUBLIC',
+    live: 'LIVE',
+  });
+  assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: null }), {
+    privacy: 'PUBLIC',
+    live: 'LIVE',
+  });
+  assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: undefined }), {
+    privacy: 'PUBLIC',
+    live: 'LIVE',
+  });
+  assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: Number.NaN }), {
+    privacy: 'PUBLIC',
+    live: 'LIVE',
+  });
   assert.equal(resolveLiveHeaderStatus('direct', { privacy: 'private', liveUserCount: 3 }), null);
   assert.equal(resolveLiveHeaderStatus('live', { privacy: 'private', liveUserCount: 3 }), null);
 
   const header = read('js/src/forum/components/MessagesConversationHeader.js');
   assert.match(header, /MessagesConversationHeader-copy/);
   assert.match(header, /MessagesConversationHeader-liveStatus/);
+  assert.match(header, /MessagesConversationHeader-liveGlobe/);
+  assert.match(header, /fas fa-globe/);
+  assert.doesNotMatch(header, /🌐/);
   assert.match(header, /resolveLiveHeaderStatus/);
   assert.match(header, /return 'FlatRate\.wiki'/);
   assert.doesNotMatch(header, /return 'FlatRate\.wiki Live'/);
@@ -266,7 +286,9 @@ test('Live conversation header status reuses liveUserCount without inventing zer
 test('mobile conversation header uses equal 44px side slots for geometric centering', () => {
   const less = read('resources/less/forum.less');
   assert.match(less, /--messages-live-accent/);
+  assert.match(less, /--messages-live-globe:\s*#84cc16/);
   assert.match(less, /\.MessagesConversationHeader-liveStatus\s*\{[\s\S]*var\(--messages-live-accent\)/);
+  assert.match(less, /\.MessagesConversationHeader-liveGlobe\s*\{[\s\S]*var\(--messages-live-globe\)/);
   assert.match(
     less,
     /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader\s*\{[\s\S]*grid-template-columns:\s*44px minmax\(0,\s*1fr\) 44px/
