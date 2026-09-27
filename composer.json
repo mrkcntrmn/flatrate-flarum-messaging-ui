@@ -36,6 +36,9 @@
         "test": "phpunit"
     },
     "extra": {
+        "branch-alias": {
+            "dev-main": "1.x-dev"
+        },
         "flarum-extension": {
             "title": "Messages",
             "category": "feature",
