@@ -2,7 +2,7 @@
 
 Local Flarum 1.8 **Messages** shell. It composes authorized Live Chat and Direct Message conversations into one `/messages` surface. It does **not** store messages, run migrations, or talk to Supabase.
 
-This tree is a **local package only**. Creating a GitHub remote or publishing to Packagist is a later consequential action — do not treat this worktree as a canonical public checkout.
+For Flarum installs, require this extension from the GitHub repository via a Composer VCS repository entry against tag **v1.5.0** (`composer require flatrate/flarum-messaging-ui:^1.5`; see **Install (GitHub VCS, tagged release)**). The package is **not** on Packagist. **Local path-repository install** below is for development only.
 
 ## Identity
 
