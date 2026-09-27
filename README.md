@@ -10,7 +10,8 @@ This tree is a **local package only**. Creating a GitHub remote or publishing to
 |---|---|
 | Composer | `flatrate/flarum-messaging-ui` |
 | Extension ID | `flatrate-messaging-ui` |
-| Flarum | 1.8.19 compatible (`flarum/core` `^1.8.5`, PHP `^8.1`) |
+| Release | `v1.5.0` |
+| Flarum | 1.8.19 compatible (`flarum/core` `^1.8.19`, PHP `^8.1`) |
 
 This package does **not** Composer-require Live Chat or the Direct Messages bridge. Providers are discovered at runtime:
 
@@ -18,6 +19,29 @@ This package does **not** Composer-require Live Chat or the Direct Messages brid
 - direct provider present → Direct rows, Direct filter, Start-DM
 - both → unified Messages product
 - neither → explicit unavailable state
+
+## Install (GitHub VCS, tagged release)
+
+From the Flarum root:
+
+```bash
+# composer.json (Flarum root)
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/mrkcntrmn/flatrate-flarum-messaging-ui"
+    }
+  ]
+}
+```
+
+```bash
+composer require flatrate/flarum-messaging-ui:^1.5
+php flarum cache:clear
+```
+
+Enable **Messages** in the admin extension list.
 
 ## Local path-repository install
 
