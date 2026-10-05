@@ -37,7 +37,7 @@ export default class MessagesDiscoveryResults extends Component {
               const live = conversation.kind === 'live';
               const count = Number(conversation.liveUserCount);
               const hasLiveCount = live && conversation.liveUserCount != null && Number.isFinite(count) && count > 0;
-              const liveText = hasLiveCount ? `${Math.floor(count)} LIVE` : 'LIVE';
+              const liveText = hasLiveCount ? `LIVE ${Math.floor(count)}` : 'LIVE';
               const activity = conversation.activityAt ? humanTime(new Date(conversation.activityAt)) : null;
               return (
                 <li
