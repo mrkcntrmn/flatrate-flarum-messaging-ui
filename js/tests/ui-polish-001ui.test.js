@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isMessagesIndexRoute, isUnifiedMessagesRoute } from '../src/forum/utils/messagingRoutes.js';
 import normalizeConversation from '../src/forum/utils/normalizeConversation.js';
+import resolveConversationBackHref from '../src/forum/utils/resolveConversationBackHref.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -247,11 +248,11 @@ test('Live conversation header status reuses liveUserCount without inventing zer
 
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 1 }), {
     privacy: 'PUBLIC',
-    live: 'LIVE 1',
+    live: '1 LIVE',
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }), {
     privacy: 'PUBLIC',
-    live: 'LIVE 0',
+    live: '0 LIVE',
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public' }), {
     privacy: 'PUBLIC',
@@ -279,8 +280,43 @@ test('Live conversation header status reuses liveUserCount without inventing zer
   assert.match(header, /fas fa-globe/);
   assert.doesNotMatch(header, /🌐/);
   assert.match(header, /resolveLiveHeaderStatus/);
+  assert.match(header, /MessagesConversationHeader--generalLive/);
+  assert.match(header, /onAllMessages/);
   assert.match(header, /return 'FlatRate\.wiki'/);
   assert.doesNotMatch(header, /return 'FlatRate\.wiki Live'/);
+});
+
+test('Live conversation back button returns to the owning board while Direct returns to Messages', () => {
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'community-general-live' }), '/');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'toyota-live' }), '/t/toyota');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'range-rover-live' }), '/t/range-rover');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'not-a-canonical-room' }), '/messages');
+  assert.equal(resolveConversationBackHref('direct', { sourceId: '42' }), '/messages');
+
+  const page = read('js/src/forum/components/MessagesPage.js');
+  assert.match(page, /resolveConversationBackHref/);
+  assert.match(page, /backFromConversation\(kind, conversation\)/);
+  assert.match(page, /onAllMessages=\{\(\) => this\.backToList\(\)\}/);
+});
+
+test('Live conversation header mirrors the MAIN row: title left, status right, lime', () => {
+  const less = read('resources/less/forum.less');
+  assert.match(
+    less,
+    /\.MessagesConversationHeader--live \.MessagesConversationHeader-copy\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto/
+  );
+  assert.match(
+    less,
+    /\.MessagesConversationHeader--live \.MessagesConversationHeader-title\s*\{[\s\S]*justify-self:\s*start[\s\S]*text-align:\s*left/
+  );
+  assert.match(
+    less,
+    /\.MessagesConversationHeader--live \.MessagesConversationHeader-liveStatus\s*\{[\s\S]*justify-self:\s*end[\s\S]*color:\s*#66ff00[\s\S]*text-align:\s*right/
+  );
+  assert.match(
+    less,
+    /\.MessagesConversationHeader--generalLive \.MessagesConversationHeader-title\s*\{[\s\S]*text-transform:\s*uppercase/
+  );
 });
 
 test('mobile conversation header uses equal 44px side slots for geometric centering', () => {
