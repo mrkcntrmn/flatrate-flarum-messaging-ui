@@ -1,5 +1,5 @@
 /**
- * Live public-room status under the primary conversation title.
+ * Live public-room status shown opposite the conversation title.
  * Never invents a count of 0 when presence has not resolved.
  *
  * Returns structured parts so the shell can render a colorable globe icon
@@ -11,7 +11,7 @@ export default function resolveLiveHeaderStatus(kind, conversation) {
   const rawCount = conversation?.liveUserCount;
   const count = Number(rawCount);
   if (rawCount != null && Number.isFinite(count) && count >= 0) {
-    return { privacy: 'PUBLIC', live: `LIVE ${Math.floor(count)}` };
+    return { privacy: 'PUBLIC', live: `${Math.floor(count)} LIVE` };
   }
   return { privacy: 'PUBLIC', live: 'LIVE' };
 }

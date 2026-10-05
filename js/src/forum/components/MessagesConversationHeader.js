@@ -15,15 +15,22 @@ import buildShellHeaderOverflowItems, {
  */
 export default class MessagesConversationHeader extends Component {
   view() {
-    const { kind, conversation, onBack, providerOverflowItems = null } = this.attrs;
+    const { kind, conversation, onBack, onAllMessages, providerOverflowItems = null } = this.attrs;
     const title = resolveHeaderTitle(kind, conversation);
     const liveStatus = resolveLiveHeaderStatus(kind, conversation);
+    const isGeneralLive = kind === 'live' && conversation?.sourceId === 'community-general-live';
     const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_menu'));
-    const shellItems = buildShellHeaderOverflowItems({ onBack });
+    const shellItems = buildShellHeaderOverflowItems({ onBack: onAllMessages || onBack });
     const items = mergeHeaderOverflowItems(shellItems, providerOverflowItems).toArray().filter(Boolean);
 
     return (
-      <header className={'MessagesConversationHeader' + (kind ? ` MessagesConversationHeader--${kind}` : '')}>
+      <header
+        className={
+          'MessagesConversationHeader' +
+          (kind ? ` MessagesConversationHeader--${kind}` : '') +
+          (isGeneralLive ? ' MessagesConversationHeader--generalLive' : '')
+        }
+      >
         <Button
           className="Button Button--icon Button--flat MessagesConversationHeader-back"
           icon="fas fa-arrow-left"

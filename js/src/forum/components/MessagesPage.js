@@ -13,6 +13,7 @@ import directConversationPaneStatus from '../utils/directConversationPaneStatus.
 import { createPeopleSearchController, findUsersByQuery, MIN_REMOTE_USER_QUERY_LENGTH } from '../utils/peopleSearch.js';
 import { collectFollowedUsers, suggestPeople } from '../utils/suggestPeople.js';
 import flattenDiscoveryOptions from '../utils/flattenDiscoveryOptions.js';
+import resolveConversationBackHref from '../utils/resolveConversationBackHref.js';
 
 /** Additive V2 provider presentation contract (shell → providers). */
 export const MESSAGES_PRESENTATION_VERSION = 2;
@@ -424,7 +425,8 @@ export default class MessagesPage extends Page {
             kind={kind}
             conversation={conversation}
             providerOverflowItems={providerOverflowItems}
-            onBack={() => this.backToList()}
+            onBack={() => this.backFromConversation(kind, conversation)}
+            onAllMessages={() => this.backToList()}
           />
         ) : null}
         <div className="MessagesPage-conversationBody">
@@ -444,6 +446,15 @@ export default class MessagesPage extends Page {
       return { kind: 'direct', key: String(conversationId) };
     }
     return null;
+  }
+
+  backFromConversation(kind, conversation) {
+    const href = resolveConversationBackHref(kind, conversation);
+    if (href === '/messages') {
+      this.backToList();
+      return;
+    }
+    m.route.set(href);
   }
 
   backToList() {

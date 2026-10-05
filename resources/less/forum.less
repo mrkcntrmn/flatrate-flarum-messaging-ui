@@ -671,6 +671,43 @@
   line-height: 1;
 }
 
+.MessagesConversationHeader--live .MessagesConversationHeader-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.MessagesConversationHeader--live .MessagesConversationHeader-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.MessagesConversationHeader--live .MessagesConversationHeader-title {
+  justify-self: start;
+  width: auto;
+  text-align: left;
+}
+
+.MessagesConversationHeader--generalLive .MessagesConversationHeader-title {
+  text-transform: uppercase;
+}
+
+.MessagesConversationHeader--live .MessagesConversationHeader-liveStatus {
+  justify-self: end;
+  justify-content: flex-end;
+  width: auto;
+  margin-left: auto;
+  color: #66ff00;
+  text-align: right;
+}
+
+.MessagesConversationHeader--live .MessagesConversationHeader-liveGlobe {
+  color: #66ff00;
+}
+
 .MessagesConversationHeader-overflow {
   flex: 0 0 auto;
 }
@@ -1012,6 +1049,29 @@
     width: 100%;
     justify-content: center;
     text-align: center;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader--live .MessagesConversationHeader-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-content: initial;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader--live .MessagesConversationHeader-title {
+    width: auto;
+    justify-self: start;
+    text-align: left;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader--live .MessagesConversationHeader-liveStatus {
+    width: auto;
+    justify-self: end;
+    justify-content: flex-end;
+    margin-left: auto;
+    text-align: right;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-overflow {
