@@ -27,6 +27,11 @@ jobs:
       - name: Composer validate
         run: composer validate --no-check-publish --strict
 
+      # Composer 2.10 blocks league/flysystem 1.x, which Flarum 1.8.19 requires.
+      # Ignore only those advisory IDs so the existing 1.8.19 lock can install.
+      - name: Allow Flarum 1.8.19 flysystem advisories
+        run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
+
       - name: Install PHP dependencies
         run: composer update --no-interaction --prefer-dist
 
