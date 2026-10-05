@@ -249,26 +249,32 @@ test('Live conversation header status reuses liveUserCount without inventing zer
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 1 }), {
     privacy: 'PUBLIC',
     live: '1 LIVE',
+    count: 1,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }), {
     privacy: 'PUBLIC',
     live: '0 LIVE',
+    count: 0,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public' }), {
     privacy: 'PUBLIC',
     live: 'LIVE',
+    count: null,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: null }), {
     privacy: 'PUBLIC',
     live: 'LIVE',
+    count: null,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: undefined }), {
     privacy: 'PUBLIC',
     live: 'LIVE',
+    count: null,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: Number.NaN }), {
     privacy: 'PUBLIC',
     live: 'LIVE',
+    count: null,
   });
   assert.equal(resolveLiveHeaderStatus('direct', { privacy: 'private', liveUserCount: 3 }), null);
   assert.equal(resolveLiveHeaderStatus('live', { privacy: 'private', liveUserCount: 3 }), null);
@@ -281,6 +287,12 @@ test('Live conversation header status reuses liveUserCount without inventing zer
   assert.doesNotMatch(header, /🌐/);
   assert.match(header, /resolveLiveHeaderStatus/);
   assert.match(header, /MessagesConversationHeader--generalLive/);
+  assert.match(header, /MessagesConversationHeader-generalCopy/);
+  assert.match(header, /MessagesConversationHeader-title">FlatRate\.wiki</);
+  assert.match(header, /MessagesConversationHeader-generalLiveStatus/);
+  assert.match(header, /MessagesConversationHeader-liveCount/);
+  assert.match(header, /<span>LIVE<\/span>/);
+  assert.doesNotMatch(header, /MessagesConversationHeader-liveChatIcon/);
   assert.match(header, /onAllMessages/);
   assert.match(header, /return 'FlatRate\.wiki'/);
   assert.doesNotMatch(header, /return 'FlatRate\.wiki Live'/);
@@ -299,25 +311,38 @@ test('Live conversation back button returns to the owning board while Direct ret
   assert.match(page, /onAllMessages=\{\(\) => this\.backToList\(\)\}/);
 });
 
-test('Live conversation header mirrors the MAIN row: title left, status right, lime', () => {
+test('General Live header keeps FLATRATE.WIKI above PUBLIC globe LIVE count in lime', () => {
+  const header = read('js/src/forum/components/MessagesConversationHeader.js');
   const less = read('resources/less/forum.less');
+
+  assert.match(header, /isGeneralLive \? \(/);
+  assert.match(header, /MessagesConversationHeader-generalCopy/);
+  assert.match(header, /MessagesConversationHeader-title">FlatRate\.wiki</);
+  assert.match(header, /MessagesConversationHeader-generalLiveStatus/);
+  assert.match(header, /<span>PUBLIC<\/span>/);
+  assert.match(header, /fas fa-globe MessagesConversationHeader-liveGlobe/);
+  assert.match(header, /<span>LIVE<\/span>/);
+  assert.match(header, /MessagesConversationHeader-liveCount/);
+  assert.doesNotMatch(header, /MessagesConversationHeader-liveChatIcon/);
+
   assert.match(
     less,
-    /\.MessagesConversationHeader--live \.MessagesConversationHeader-copy\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) auto/
+    /\.MessagesConversationHeader--generalLive \.MessagesConversationHeader-title\s*\{[\s\S]*text-transform:\s*uppercase[\s\S]*text-align:\s*center/
   );
   assert.match(
     less,
-    /\.MessagesConversationHeader--live \.MessagesConversationHeader-title\s*\{[\s\S]*justify-self:\s*start[\s\S]*text-align:\s*left/
+    /\.MessagesConversationHeader-generalLiveStatus\s*\{[\s\S]*justify-content:\s*center[\s\S]*color:\s*#66ff00[\s\S]*text-align:\s*center/
   );
   assert.match(
     less,
-    /\.MessagesConversationHeader--live \.MessagesConversationHeader-liveStatus\s*\{[\s\S]*justify-self:\s*end[\s\S]*color:\s*#66ff00[\s\S]*text-align:\s*right/
+    /\.MessagesConversationHeader--generalLive \.MessagesConversationHeader-main\s*\{[\s\S]*justify-content:\s*center/
   );
   assert.match(
     less,
-    /\.MessagesConversationHeader--generalLive \.MessagesConversationHeader-title\s*\{[\s\S]*text-transform:\s*uppercase/
+    /\.MessagesConversationHeader-generalLiveStatus \.MessagesConversationHeader-liveGlobe[\s\S]*color:\s*#66ff00/
   );
 });
+
 
 test('mobile conversation header uses equal 44px side slots for geometric centering', () => {
   const less = read('resources/less/forum.less');

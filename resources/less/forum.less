@@ -671,6 +671,48 @@
   line-height: 1;
 }
 
+.MessagesConversationHeader-generalCopy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.MessagesConversationHeader--generalLive .MessagesConversationHeader-title {
+  text-transform: uppercase;
+  justify-self: center;
+  width: 100%;
+  text-align: center;
+}
+
+.MessagesConversationHeader-generalLiveStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0 auto;
+  color: #66ff00;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.MessagesConversationHeader-generalLiveStatus .MessagesConversationHeader-liveGlobe,
+.MessagesConversationHeader-generalLiveStatus .MessagesConversationHeader-liveCount {
+  color: #66ff00;
+  line-height: 1;
+}
+
+.MessagesConversationHeader--generalLive .MessagesConversationHeader-main {
+  justify-content: center;
+}
+
 .MessagesConversationHeader--live .MessagesConversationHeader-main {
   flex: 1 1 auto;
   min-width: 0;
@@ -689,10 +731,6 @@
   justify-self: start;
   width: auto;
   text-align: left;
-}
-
-.MessagesConversationHeader--generalLive .MessagesConversationHeader-title {
-  text-transform: uppercase;
 }
 
 .MessagesConversationHeader--live .MessagesConversationHeader-liveStatus {
@@ -1072,6 +1110,28 @@
     justify-content: flex-end;
     margin-left: auto;
     text-align: right;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader--generalLive .MessagesConversationHeader-generalCopy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader--generalLive .MessagesConversationHeader-title {
+    width: 100%;
+    justify-self: center;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .MessagesPage.viewing-conversation .MessagesConversationHeader--generalLive .MessagesConversationHeader-generalLiveStatus {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    text-align: center;
+    color: #66ff00;
   }
 
   .MessagesPage.viewing-conversation .MessagesConversationHeader-overflow {

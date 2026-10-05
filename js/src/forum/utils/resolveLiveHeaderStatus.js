@@ -11,7 +11,8 @@ export default function resolveLiveHeaderStatus(kind, conversation) {
   const rawCount = conversation?.liveUserCount;
   const count = Number(rawCount);
   if (rawCount != null && Number.isFinite(count) && count >= 0) {
-    return { privacy: 'PUBLIC', live: `${Math.floor(count)} LIVE` };
+    const resolved = Math.floor(count);
+    return { privacy: 'PUBLIC', live: `${resolved} LIVE`, count: resolved };
   }
-  return { privacy: 'PUBLIC', live: 'LIVE' };
+  return { privacy: 'PUBLIC', live: 'LIVE', count: null };
 }

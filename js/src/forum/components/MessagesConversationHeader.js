@@ -40,23 +40,42 @@ export default class MessagesConversationHeader extends Component {
           }}
         />
         <div className="MessagesConversationHeader-main">
-          {conversation?.avatarUrl ? (
-            <img className="MessagesConversationHeader-avatar" src={conversation.avatarUrl} alt="" />
-          ) : (
-            <span className="MessagesConversationHeader-icon" aria-hidden="true">
-              <i className={conversation?.icon || (kind === 'live' ? 'fas fa-comments' : 'fas fa-user')} />
-            </span>
-          )}
-          <div className="MessagesConversationHeader-copy">
-            <h2 className="MessagesConversationHeader-title">{title}</h2>
-            {liveStatus ? (
-              <div className="MessagesConversationHeader-liveStatus">
-                <span>{liveStatus.privacy}</span>
+          {isGeneralLive ? (
+            <div className="MessagesConversationHeader-generalCopy">
+              <h2 className="MessagesConversationHeader-title">FlatRate.wiki</h2>
+              <div
+                className="MessagesConversationHeader-generalLiveStatus"
+                aria-label={generalLiveStatusLabel(liveStatus)}
+              >
+                <span>PUBLIC</span>
                 <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
-                <span>{liveStatus.live}</span>
+                <span>LIVE</span>
+                {liveStatus && liveStatus.count != null ? (
+                  <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span>
+                ) : null}
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : (
+            <>
+              {conversation?.avatarUrl ? (
+                <img className="MessagesConversationHeader-avatar" src={conversation.avatarUrl} alt="" />
+              ) : (
+                <span className="MessagesConversationHeader-icon" aria-hidden="true">
+                  <i className={conversation?.icon || (kind === 'live' ? 'fas fa-comments' : 'fas fa-user')} />
+                </span>
+              )}
+              <div className="MessagesConversationHeader-copy">
+                <h2 className="MessagesConversationHeader-title">{title}</h2>
+                {liveStatus ? (
+                  <div className="MessagesConversationHeader-liveStatus">
+                    <span>{liveStatus.privacy}</span>
+                    <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
+                    <span>{liveStatus.live}</span>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
         <Dropdown
           className="MessagesConversationHeader-overflow"
@@ -72,6 +91,13 @@ export default class MessagesConversationHeader extends Component {
       </header>
     );
   }
+}
+
+function generalLiveStatusLabel(liveStatus) {
+  if (liveStatus && liveStatus.count != null) {
+    return `PUBLIC LIVE ${liveStatus.count}`;
+  }
+  return 'PUBLIC LIVE';
 }
 
 function resolveHeaderTitle(kind, conversation) {
