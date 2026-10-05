@@ -6,10 +6,10 @@ const LIVE_ROOM_SUFFIX = '-live';
  *
  * Live room identity is durable:
  * - General Live is pinned on MAIN, so Back returns to '/'.
- * - Canonical Brand rooms use {boardKey}-live, so Back returns to /t/{boardKey}.
- * - Direct or unknown conversations retain the Messages directory fallback.
+ * - Brand rooms ask Navigation for the canonical board URL.
+ * - Direct, unknown rooms, or a missing route provider return '/messages'.
  */
-export default function resolveConversationBackHref(kind, conversation) {
+export default function resolveConversationBackHref(kind, conversation, routes = null) {
   if (kind !== 'live') return '/messages';
 
   const sourceId = readText(conversation?.sourceId);
@@ -28,7 +28,16 @@ export default function resolveConversationBackHref(kind, conversation) {
     return '/messages';
   }
 
-  return `/t/${boardKey}`;
+  try {
+    const href = routes && typeof routes.hrefForBoardKey === 'function' ? routes.hrefForBoardKey(boardKey) : null;
+    if (typeof href === 'string' && href.startsWith('/t/')) {
+      return href;
+    }
+  } catch (error) {
+    return '/messages';
+  }
+
+  return '/messages';
 }
 
 function readText(value) {

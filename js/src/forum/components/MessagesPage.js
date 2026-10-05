@@ -449,7 +449,7 @@ export default class MessagesPage extends Page {
   }
 
   backFromConversation(kind, conversation) {
-    const href = resolveConversationBackHref(kind, conversation);
+    const href = resolveConversationBackHref(kind, conversation, app.flatRateBoardRoutes);
     if (href === '/messages') {
       this.backToList();
       return;

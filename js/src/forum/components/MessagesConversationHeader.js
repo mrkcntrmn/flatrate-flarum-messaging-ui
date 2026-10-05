@@ -70,7 +70,10 @@ export default class MessagesConversationHeader extends Component {
                   <div className="MessagesConversationHeader-liveStatus">
                     <span>{liveStatus.privacy}</span>
                     <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
-                    <span>{liveStatus.live}</span>
+                    <span>LIVE</span>
+                    {liveStatus.count != null ? (
+                      <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
