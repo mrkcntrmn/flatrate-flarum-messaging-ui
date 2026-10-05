@@ -37,7 +37,7 @@ export default class ConversationRow extends Component {
     const activity = activityAt ? humanTime(new Date(activityAt)) : null;
     const unread = Number(unreadCount) > 0;
     const count = Number(liveUserCount);
-    const hasLiveCount = live && liveUserCount != null && Number.isFinite(count) && count >= 0;
+    const hasLiveCount = live && liveUserCount != null && Number.isFinite(count) && count > 0;
     const livePresenceText = hasLiveCount ? `${Math.floor(count)} LIVE` : 'LIVE';
     const livePresenceAria = hasLiveCount ? `${Math.floor(count)} users live` : 'Live room';
     const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_options'));

@@ -253,8 +253,8 @@ test('Live conversation header status reuses liveUserCount without inventing zer
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }), {
     privacy: 'PUBLIC',
-    live: '0 LIVE',
-    count: 0,
+    live: 'LIVE',
+    count: null,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public' }), {
     privacy: 'PUBLIC',
