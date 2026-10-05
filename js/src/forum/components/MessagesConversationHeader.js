@@ -41,11 +41,19 @@ export default class MessagesConversationHeader extends Component {
         />
         <div className="MessagesConversationHeader-main">
           {isGeneralLive ? (
-            <div className="MessagesConversationHeader-generalLiveStatus" aria-label="Public Live chat">
-              <span>PUBLIC</span>
-              <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
-              <span>LIVE</span>
-              <i className="fas fa-comments MessagesConversationHeader-liveChatIcon" aria-hidden="true" />
+            <div className="MessagesConversationHeader-generalCopy">
+              <h2 className="MessagesConversationHeader-title">FlatRate.wiki</h2>
+              <div
+                className="MessagesConversationHeader-generalLiveStatus"
+                aria-label={generalLiveStatusLabel(liveStatus)}
+              >
+                <span>PUBLIC</span>
+                <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
+                <span>LIVE</span>
+                {liveStatus && liveStatus.count != null ? (
+                  <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span>
+                ) : null}
+              </div>
             </div>
           ) : (
             <>
@@ -83,6 +91,13 @@ export default class MessagesConversationHeader extends Component {
       </header>
     );
   }
+}
+
+function generalLiveStatusLabel(liveStatus) {
+  if (liveStatus && liveStatus.count != null) {
+    return `PUBLIC LIVE ${liveStatus.count}`;
+  }
+  return 'PUBLIC LIVE';
 }
 
 function resolveHeaderTitle(kind, conversation) {
