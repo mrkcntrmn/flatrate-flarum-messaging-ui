@@ -133,7 +133,7 @@ test('shell owns baseline overflow actions and merges provider items', () => {
   assert.doesNotMatch(page, /discoverSources\(\s*\)/);
   // Direct with null/empty provider contribution still renders shell overflow.
   const header = read('js/src/forum/components/MessagesConversationHeader.js');
-  assert.match(header, /buildShellHeaderOverflowItems\(\{ onBack \}\)/);
+  assert.match(header, /buildShellHeaderOverflowItems\(\{ onBack: onAllMessages \|\| onBack \}\)/);
   assert.match(header, /mergeHeaderOverflowItems\(shellItems, providerOverflowItems\)/);
 });
 
