@@ -210,8 +210,8 @@ test('directory Live presence consumes liveUserCount with LIVE fallback', () => 
   const rowSrc = read('js/src/forum/components/ConversationRow.js');
   assert.match(rowSrc, /liveUserCount/);
   assert.match(rowSrc, /hasLiveCount/);
-  assert.match(rowSrc, /\$\{Math\.floor\(count\)\} LIVE/);
-  assert.match(rowSrc, /livePresenceText = hasLiveCount \? `\$\{Math\.floor\(count\)\} LIVE` : 'LIVE'/);
+  assert.match(rowSrc, /LIVE \$\{Math\.floor\(count\)\}/);
+  assert.match(rowSrc, /livePresenceText = hasLiveCount \? `LIVE \$\{Math\.floor\(count\)\}` : 'LIVE'/);
   assert.match(rowSrc, /ConversationRow-livePresence/);
   assert.doesNotMatch(rowSrc, /ConversationRow-privacy-text/);
 
@@ -248,13 +248,13 @@ test('Live conversation header status reuses liveUserCount without inventing zer
 
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 1 }), {
     privacy: 'PUBLIC',
-    live: '1 LIVE',
+    live: 'LIVE 1',
     count: 1,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public', liveUserCount: 0 }), {
     privacy: 'PUBLIC',
-    live: '0 LIVE',
-    count: 0,
+    live: 'LIVE',
+    count: null,
   });
   assert.deepEqual(resolveLiveHeaderStatus('live', { privacy: 'public' }), {
     privacy: 'PUBLIC',
