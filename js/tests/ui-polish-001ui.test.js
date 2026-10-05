@@ -298,16 +298,32 @@ test('Live conversation header status reuses liveUserCount without inventing zer
   assert.doesNotMatch(header, /return 'FlatRate\.wiki Live'/);
 });
 
-test('Live conversation back button returns to the owning board while Direct returns to Messages', () => {
-  assert.equal(resolveConversationBackHref('live', { sourceId: 'community-general-live' }), '/');
-  assert.equal(resolveConversationBackHref('live', { sourceId: 'toyota-live' }), '/t/toyota');
-  assert.equal(resolveConversationBackHref('live', { sourceId: 'range-rover-live' }), '/t/range-rover');
-  assert.equal(resolveConversationBackHref('live', { sourceId: 'not-a-canonical-room' }), '/messages');
-  assert.equal(resolveConversationBackHref('direct', { sourceId: '42' }), '/messages');
+test('Live conversation back button uses the Navigation board route and fails closed', () => {
+  const routes = {
+    hrefForBoardKey(boardKey) {
+      return {
+        ford: '/t/ford',
+        toyota: '/t/toyota',
+        'range-rover': '/t/range-rover',
+        'alfa-romeo': '/t/alpha-romeo',
+        genesis: '/t/genisis',
+      }[boardKey] || null;
+    },
+  };
+
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'community-general-live' }, routes), '/');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'toyota-live' }, routes), '/t/toyota');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'range-rover-live' }, routes), '/t/range-rover');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'alfa-romeo-live' }, routes), '/t/alpha-romeo');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'genesis-live' }, routes), '/t/genisis');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'toyota-live' }), '/messages');
+  assert.equal(resolveConversationBackHref('live', { sourceId: 'not-a-canonical-room' }, routes), '/messages');
+  assert.equal(resolveConversationBackHref('direct', { sourceId: '42' }, routes), '/messages');
 
   const page = read('js/src/forum/components/MessagesPage.js');
   assert.match(page, /resolveConversationBackHref/);
   assert.match(page, /backFromConversation\(kind, conversation\)/);
+  assert.match(page, /app\.flatRateBoardRoutes/);
   assert.match(page, /onAllMessages=\{\(\) => this\.backToList\(\)\}/);
 });
 
