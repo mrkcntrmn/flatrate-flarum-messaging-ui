@@ -13,6 +13,7 @@ import createMessagingService from './createMessagingService.js';
 import canOfferMessageAction from './utils/canOfferMessageAction.js';
 import { isUnifiedMessagesRoute } from './utils/messagingRoutes.js';
 import { bindExistingRealtime, createNotificationInbox } from './notifications/createNotificationInbox.js';
+import { notificationsAvailable } from './notifications/notificationsAvailability.js';
 
 app.initializers.add('flatrate-messaging-ui', () => {
   app.routes['flatrate-messaging.index'] = { path: '/messages', component: MessagesPage };
@@ -42,7 +43,7 @@ app.initializers.add('flatrate-messaging-ui', () => {
   app.flatrateNotifications = inbox;
   bindExistingRealtime(app, inbox);
   setTimeout(() => {
-    if (app.session && app.session.user) {
+    if (app.session && app.session.user && notificationsAvailable(app)) {
       inbox.refresh();
     }
   }, 0);

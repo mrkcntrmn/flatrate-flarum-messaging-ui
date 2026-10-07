@@ -14,7 +14,7 @@ const policy = read('src/Seo/MessagingIndexingPolicy.php');
 test('signed-out notifications do not render private rows or counts', () => {
   assert.match(empty, /Sign in to view notifications/);
   assert.match(page, /mode="signed-out"/);
-  assert.match(page, /if \(app\.session\.user\)/);
+  assert.match(page, /if \(app\.session\.user && notificationsAvailable\(app\)\)/);
   assert.match(page, /state\.setSignedIn\(!!app\.session\.user\)/);
   assert.doesNotMatch(page, /You're all caught up/);
   assert.match(page, /mode === 'signed-out'|NotificationInboxEmpty mode="signed-out"/);

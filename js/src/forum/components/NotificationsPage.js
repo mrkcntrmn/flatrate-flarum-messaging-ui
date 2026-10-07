@@ -7,6 +7,7 @@ import NotificationInboxTabs from './NotificationInboxTabs.js';
 import NotificationInboxList from './NotificationInboxList.js';
 import NotificationInboxEmpty from './NotificationInboxEmpty.js';
 import { applyMessageEligibility } from '../notifications/rowActions.js';
+import { notificationsAvailable } from '../notifications/notificationsAvailability.js';
 import { rememberScroll, restoreScroll } from '../notifications/notificationRoutes.js';
 
 export default class NotificationsPage extends Page {
@@ -16,7 +17,7 @@ export default class NotificationsPage extends Page {
     const state = app.flatrateNotificationState;
     if (!state) return;
     state.setSignedIn(!!app.session.user);
-    if (app.session.user) {
+    if (app.session.user && notificationsAvailable(app)) {
       state.refresh().then(() => m.redraw());
     }
   }
@@ -48,6 +49,16 @@ export default class NotificationsPage extends Page {
           <NotificationInboxEmpty mode="signed-out" />
           <Button className="Button Button--primary" onclick={() => app.modal.show(LogInModal)}>
             Log In
+          </Button>
+        </div>
+      );
+    }
+
+    if (!notificationsAvailable(app)) {
+      return (
+        <div className="NotificationsPage">
+          <Button className="Button" onclick={() => m.route.set('/')}>
+            MAIN
           </Button>
         </div>
       );
