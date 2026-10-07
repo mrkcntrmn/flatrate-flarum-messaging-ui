@@ -53,6 +53,7 @@ test('api resource keeps conversation id and drops the message body', () => {
     attributes: {
       contentType: 'newPrivateMessage',
       content: { message: 'private body', conversation: { id: 44 } },
+      href: '/d/planted-by-the-api',
       isRead: false,
       createdAt: '2026-10-07T12:00:00.000Z',
     },
@@ -62,6 +63,8 @@ test('api resource keeps conversation id and drops the message body', () => {
     attributes: { username: 'tech_8', displayName: 'tech_8' },
   }]);
   assert.equal(input.conversationId, '44');
+  assert.equal(input.href, '');
+  assert.equal(input.targetUnavailable, true);
   assert.equal(Object.hasOwn(input, 'message'), false);
   assert.equal(JSON.stringify(input).includes('private body'), false);
 });

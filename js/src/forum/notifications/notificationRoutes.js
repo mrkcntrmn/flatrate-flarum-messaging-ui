@@ -7,12 +7,12 @@ export function isNotificationsPath(path) {
 }
 
 /**
- * Normal journey uses browser/Android history. A hard load has no prior entry
- * and falls back to MAIN. This never pushes a trap state.
+ * Back follows Flarum's in-app history stack, not window.history.length.
+ * A hard load only has the current entry, so Back goes to MAIN instead of
+ * leaving through whatever external page happened to sit behind the tab.
  */
-export function notificationsBackPlan({ historyLength } = {}) {
-  const length = Number(historyLength);
-  if (Number.isFinite(length) && length > 1) {
+export function notificationsBackPlan({ canGoBack } = {}) {
+  if (canGoBack === true) {
     return { type: 'history' };
   }
   return { type: 'main', href: '/' };

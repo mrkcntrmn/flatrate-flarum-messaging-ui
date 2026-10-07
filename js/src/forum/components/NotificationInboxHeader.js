@@ -1,14 +1,16 @@
+import app from 'flarum/forum/app';
 import Button from 'flarum/common/components/Button';
 import { notificationsBackPlan } from '../notifications/notificationRoutes.js';
 
 export default class NotificationInboxHeader {
-  view(vnode) {
+  view() {
     const back = () => {
+      const history = app.history;
       const plan = notificationsBackPlan({
-        historyLength: typeof window !== 'undefined' && window.history ? window.history.length : 1,
+        canGoBack: !!(history && typeof history.canGoBack === 'function' && history.canGoBack()),
       });
-      if (plan.type === 'history' && typeof window !== 'undefined' && window.history) {
-        window.history.back();
+      if (plan.type === 'history' && history && typeof history.back === 'function') {
+        history.back();
         return;
       }
       if (typeof m !== 'undefined' && m.route) {

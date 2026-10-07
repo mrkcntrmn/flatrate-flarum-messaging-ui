@@ -32,6 +32,15 @@ test('message action requires one other messageable member', () => {
   assert.equal(eligible({ source: 'direct' }), false);
   assert.equal(eligible({ source: 'live' }), false);
   assert.equal(eligible({ kind: 'newPrivateMessage' }), false);
+  assert.equal(eligible({ kind: 'discussionRenamed' }), true);
+  assert.equal(eligible({ kind: 'postLiked' }), true);
+  assert.equal(eligible({ kind: 'userMentioned' }), true);
+  assert.equal(eligible({ kind: 'postMentioned' }), true);
+  assert.equal(eligible({ kind: 'groupMentioned' }), true);
+  assert.equal(eligible({ kind: 'reply' }), false);
+  assert.equal(eligible({ kind: 'userSuspended' }), false);
+  assert.equal(eligible({ kind: '' }), false);
+  assert.equal(eligible({ kind: 'forum' }), false);
 });
 
 test('eligible forum row exposes Message and direct rows open the conversation', () => {

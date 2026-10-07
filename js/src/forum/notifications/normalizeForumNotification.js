@@ -1,4 +1,5 @@
 import { assertPresentationSafe } from './forbiddenPresentationFields.js';
+import { isSafeForumHref } from './forumNotificationTarget.js';
 import { isAggregateActor } from './messageActionEligibility.js';
 
 export const DIRECT_FLARUM_NOTIFICATION_TYPE = 'newPrivateMessage';
@@ -77,7 +78,8 @@ export function normalizeForumNotification(raw, directConversationIds) {
     actor: actor && actor.id ? actor : null,
     unreadCount,
     activityAt: raw.createdAt || raw.activityAt || null,
-    href: typeof raw.href === 'string' ? raw.href : '',
+    href: isSafeForumHref(raw.href) ? raw.href : '',
+    targetUnavailable: !isSafeForumHref(raw.href),
     canMessageActor: false,
     aggregate,
   };

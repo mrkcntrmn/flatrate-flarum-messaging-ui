@@ -7,6 +7,7 @@ import NotificationInboxTabs from './NotificationInboxTabs.js';
 import NotificationInboxList from './NotificationInboxList.js';
 import NotificationInboxEmpty from './NotificationInboxEmpty.js';
 import { applyMessageEligibility } from '../notifications/rowActions.js';
+import { syncNotificationAccess } from '../notifications/createNotificationInbox.js';
 import { notificationsAvailable } from '../notifications/notificationsAvailability.js';
 import { rememberScroll, restoreScroll } from '../notifications/notificationRoutes.js';
 
@@ -16,6 +17,10 @@ export default class NotificationsPage extends Page {
     this.bodyClass = 'App--notifications';
     const state = app.flatrateNotificationState;
     if (!state) return;
+    if (app.history && typeof app.history.push === 'function') {
+      app.history.push('notifications', 'Notifications');
+    }
+    syncNotificationAccess(app, state);
     state.setSignedIn(!!app.session.user);
     if (app.session.user && notificationsAvailable(app)) {
       state.refresh().then(() => m.redraw());
