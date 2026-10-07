@@ -43,3 +43,11 @@ flatrate-messaging-ui:
       message: Message
     profile:
       message: Message
+  admin:
+    settings:
+      notifications_admin_preview_enabled: Admin Preview
+      notifications_admin_preview_enabled_help: Shows Notifications only to authorized administrators. Does not enable Beta Testers or Users. Turning this off hides the surface and does not delete unread state.
+      notifications_member_beta_enabled: Beta Testers
+      notifications_member_beta_enabled_help: Shows Notifications only to members with active admin-approved beta access. A beta request is not access. Does not enable Users. Turning this off hides the surface and does not delete unread state or beta approval.
+      notifications_member_enabled: Users
+      notifications_member_enabled_help: Shows Notifications to signed-in members. Guests stay excluded. Turning this off hides the surface and does not delete unread state.

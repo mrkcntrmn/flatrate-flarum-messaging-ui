@@ -1,5 +1,6 @@
 import NotificationInboxState from './NotificationInboxState.js';
 import { forumInputFromResource } from './forumInputFromResource.js';
+import { notificationsAvailable } from './notificationsAvailability.js';
 import { unifiedUnread } from './unifiedUnread.js';
 
 export function bindExistingRealtime(app, inbox) {
@@ -13,7 +14,12 @@ export function bindExistingRealtime(app, inbox) {
       return;
     }
     channel.flatrateNotificationsBound = true;
-    channel.bind('notification', () => inbox.state.refreshForumCount());
+    channel.bind('notification', () => {
+      if (!notificationsAvailable(app)) {
+        return;
+      }
+      inbox.state.refreshForumCount();
+    });
   });
 }
 
@@ -29,15 +35,15 @@ export function createNotificationInbox(app) {
     state,
     refresh() {
       state.setSignedIn(!!app.session?.user);
-      if (!app.session?.user) {
+      if (!app.session?.user || !notificationsAvailable(app)) {
         return Promise.resolve(state.emptyState());
       }
       return state.refresh();
     },
     badge() {
       state.setSignedIn(!!app.session?.user);
-      if (!app.session?.user) {
-        return { status: 'known', count: null, signedOut: true };
+      if (!app.session?.user || !notificationsAvailable(app)) {
+        return { status: 'known', count: null, signedOut: !app.session?.user };
       }
       const direct = providerUnread(app, 'direct');
       const live = providerUnread(app, 'live');
