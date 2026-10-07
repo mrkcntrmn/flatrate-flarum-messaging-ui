@@ -72,6 +72,7 @@ test('inbox state keeps forum rows when direct refresh fails and does not claim 
     loadLive: async () => ({ rows: [], unreadTotal: 0 }),
   });
   state.setSignedIn(true);
+  state.setAvailable(true);
   assert.equal(await state.refresh(), 'partial');
   assert.equal(state.rows().length, 1);
   assert.equal(state.unread().status, 'unknown');

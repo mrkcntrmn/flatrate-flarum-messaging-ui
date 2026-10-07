@@ -33,6 +33,7 @@ test('caught up is withheld while a source is unknown', async () => {
     },
   });
   state.setSignedIn(true);
+  state.setAvailable(true);
   assert.equal(await state.refresh(), 'unavailable');
   assert.match(empty, /You're all caught up\./);
   assert.match(empty, /Some notifications could not be loaded\./);

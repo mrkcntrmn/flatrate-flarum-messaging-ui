@@ -18,6 +18,8 @@ export default class NotificationInboxState {
     this.loaders = loaders;
     this.filter = 'all';
     this.signedIn = false;
+    this.available = false;
+    this.actorId = null;
     this.forum = blankForum();
     this.direct = blankMessages();
     this.live = blankMessages();
@@ -30,13 +32,37 @@ export default class NotificationInboxState {
   }
 
   setSignedIn(signedIn) {
-    this.signedIn = !!signedIn;
+    const next = !!signedIn;
+    if (next !== this.signedIn) {
+      this._generation += 1;
+    }
+    this.signedIn = next;
     if (!this.signedIn) {
-      this.forum = { ...blankForum(), status: 'known', rowsStatus: 'known' };
-      this.direct = { ...blankMessages(), status: 'known' };
-      this.live = { ...blankMessages(), status: 'known' };
+      this.clearPresentation();
     }
     return this.signedIn;
+  }
+
+  setActor(actorId) {
+    const next = actorId == null || actorId === '' ? null : String(actorId);
+    if (next !== this.actorId) {
+      this._generation += 1;
+      this.clearPresentation();
+    }
+    this.actorId = next;
+    return this.actorId;
+  }
+
+  setAvailable(available) {
+    const next = available === true;
+    if (next !== this.available) {
+      this._generation += 1;
+      if (!next) {
+        this.clearPresentation();
+      }
+    }
+    this.available = next;
+    return this.available;
   }
 
   unread() {
@@ -76,10 +102,11 @@ export default class NotificationInboxState {
   }
 
   async refresh() {
-    if (!this.signedIn) {
+    if (!this.signedIn || this.available !== true) {
       return this.emptyState();
     }
     const generation = ++this._generation;
+    const actorId = this.actorId;
     this.forum = { ...this.forum, status: 'loading', rowsStatus: 'loading' };
     this.direct = { ...this.direct, status: 'loading' };
     this.live = { ...this.live, status: 'loading' };
@@ -91,7 +118,7 @@ export default class NotificationInboxState {
       capture(() => this.loaders.loadLive?.()),
     ]);
 
-    if (generation !== this._generation) {
+    if (!this.sameView(generation, actorId)) {
       return this.emptyState();
     }
 
@@ -115,8 +142,11 @@ export default class NotificationInboxState {
   }
 
   async refreshForumCount() {
-    if (!this.signedIn) return;
+    if (!this.signedIn || this.available !== true) return;
+    const generation = this._generation;
+    const actorId = this.actorId;
     const forumCount = await capture(() => this.loaders.loadForumCount?.());
+    if (!this.sameView(generation, actorId)) return;
     this.forum = {
       ...this.forum,
       status: numberStatus(forumCount),
@@ -125,6 +155,23 @@ export default class NotificationInboxState {
     };
   }
 }
+
+function sameView(state, generation, actorId) {
+  return state._generation === generation
+    && state.actorId === actorId
+    && state.signedIn
+    && state.available === true;
+}
+
+NotificationInboxState.prototype.sameView = function sameViewBound(generation, actorId) {
+  return sameView(this, generation, actorId);
+};
+
+NotificationInboxState.prototype.clearPresentation = function clearPresentation() {
+  this.forum = { ...blankForum(), status: 'known', rowsStatus: 'known' };
+  this.direct = { ...blankMessages(), status: 'known' };
+  this.live = { ...blankMessages(), status: 'known' };
+};
 
 function blankForum() {
   return { status: 'idle', rowsStatus: 'idle', count: null, rows: [], error: null };

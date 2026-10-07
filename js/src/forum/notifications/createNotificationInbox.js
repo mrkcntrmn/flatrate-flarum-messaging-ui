@@ -1,7 +1,16 @@
 import NotificationInboxState from './NotificationInboxState.js';
 import { forumInputFromResource } from './forumInputFromResource.js';
+import { resolveForumNotificationTarget } from './forumNotificationTarget.js';
 import { notificationsAvailable } from './notificationsAvailability.js';
 import { unifiedUnread } from './unifiedUnread.js';
+
+export function syncNotificationAccess(app, state) {
+  const user = app.session?.user || null;
+  const id = user && typeof user.id === 'function' ? user.id() : null;
+  state.setAvailable(notificationsAvailable(app));
+  state.setActor(id);
+  state.setSignedIn(!!user);
+}
 
 export function bindExistingRealtime(app, inbox) {
   const pusher = app.pusher;
@@ -34,14 +43,14 @@ export function createNotificationInbox(app) {
   return {
     state,
     refresh() {
-      state.setSignedIn(!!app.session?.user);
+      syncNotificationAccess(app, state);
       if (!app.session?.user || !notificationsAvailable(app)) {
         return Promise.resolve(state.emptyState());
       }
       return state.refresh();
     },
     badge() {
-      state.setSignedIn(!!app.session?.user);
+      syncNotificationAccess(app, state);
       if (!app.session?.user || !notificationsAvailable(app)) {
         return { status: 'known', count: null, signedOut: !app.session?.user };
       }
@@ -77,7 +86,18 @@ async function loadForumNotifications(app) {
     url: `${app.forum.attribute('apiUrl')}/notifications`,
   });
   const included = Array.isArray(payload?.included) ? payload.included.filter((item) => item.type === 'users') : [];
-  return (payload?.data || []).map((resource) => forumInputFromResource(resource, included));
+  const models = app.store && typeof app.store.pushPayload === 'function'
+    ? app.store.pushPayload(payload)
+    : [];
+  const byId = new Map();
+  for (const model of Array.isArray(models) ? models : []) {
+    const id = model && typeof model.id === 'function' ? model.id() : model?.id;
+    if (id != null) byId.set(String(id), model);
+  }
+  return (payload?.data || []).map((resource) => {
+    const model = byId.get(String(resource?.id));
+    return forumInputFromResource(resource, included, resolveForumNotificationTarget(app, model));
+  });
 }
 
 async function loadProvider(app, kind) {

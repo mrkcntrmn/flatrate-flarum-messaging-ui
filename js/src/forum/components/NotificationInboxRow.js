@@ -42,10 +42,17 @@ export default class NotificationInboxRow {
           <span className="NotificationInboxRow-actor" aria-hidden="true" />
         )}
         <div className="NotificationInboxRow-body">
-          <Link className="NotificationInboxRow-target" href={actions.primary?.href || row.href}>
-            <span className="NotificationInboxRow-title">{row.title}</span>
-            {when ? <time className="NotificationInboxRow-time">{when}</time> : null}
-          </Link>
+          {actions.primary?.href ? (
+            <Link className="NotificationInboxRow-target" href={actions.primary.href}>
+              <span className="NotificationInboxRow-title">{row.title}</span>
+              {when ? <time className="NotificationInboxRow-time">{when}</time> : null}
+            </Link>
+          ) : (
+            <div className="NotificationInboxRow-target" data-target="unavailable">
+              <span className="NotificationInboxRow-title">{row.title}</span>
+              {when ? <time className="NotificationInboxRow-time">{when}</time> : null}
+            </div>
+          )}
           {actions.message ? (
             <button
               type="button"

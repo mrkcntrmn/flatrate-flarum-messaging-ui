@@ -5,6 +5,7 @@ namespace FlatRate\MessagingUi;
 use Flarum\Api\Serializer\ForumSerializer;
 use Flarum\Extend;
 use Flarum\Frontend\Document;
+use Flarum\Settings\Event\Saved;
 use Flarum\Settings\Event\Saving;
 use Flarum\Settings\SettingsRepositoryInterface;
 use FlatRate\MessagingUi\Api\ShowForumNotificationUnreadController;
@@ -54,7 +55,8 @@ return [
         }),
 
     (new Extend\Event())
-        ->listen(Saving::class, [RecordNotificationsRolloutChange::class, 'handle']),
+        ->listen(Saving::class, [RecordNotificationsRolloutChange::class, 'handleSaving'])
+        ->listen(Saved::class, [RecordNotificationsRolloutChange::class, 'handleSaved']),
 
     (new Extend\Middleware('api'))
         ->add(CaptureNotificationsRolloutActor::class),

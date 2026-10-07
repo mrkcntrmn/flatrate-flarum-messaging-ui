@@ -19,8 +19,10 @@ test('notifications route is canonical and hard-load back falls through to MAIN'
   assert.equal(isNotificationsPath('/notifications/'), true);
   assert.equal(isNotificationsPath('/notification'), false);
   assert.equal(isNotificationsPath('/messages'), false);
-  assert.deepEqual(notificationsBackPlan({ historyLength: 1 }), { type: 'main', href: '/' });
-  assert.deepEqual(notificationsBackPlan({ historyLength: 2 }), { type: 'history' });
+  assert.deepEqual(notificationsBackPlan({ canGoBack: false }), { type: 'main', href: '/' });
+  assert.deepEqual(notificationsBackPlan({}), { type: 'main', href: '/' });
+  assert.deepEqual(notificationsBackPlan({ canGoBack: true }), { type: 'history' });
+  assert.doesNotMatch(readFileSync(join(root, 'js/src/forum/components/NotificationInboxHeader.js'), 'utf8'), /window\.history/);
   assert.match(index, /flatrate-notifications\.index/);
   assert.match(index, /path: '\/notifications'/);
   assert.match(index, /routes\.notifications\.component = NotificationsPage/);
