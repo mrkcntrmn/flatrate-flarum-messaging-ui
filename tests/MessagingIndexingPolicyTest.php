@@ -30,6 +30,7 @@ class MessagingIndexingPolicyTest extends TestCase
         $this->assertStringContainsString("->route('/messages', 'flatrate-messaging.index')", $src);
         $this->assertStringContainsString("->route('/messages/live/{roomKey}', 'flatrate-messaging.live')", $src);
         $this->assertStringContainsString("->route('/messages/direct/{conversationId}', 'flatrate-messaging.direct')", $src);
+        $this->assertStringContainsString('/flatrate-messaging/forum-notification-unread', $src);
         $this->assertStringContainsString('MessagingIndexingPolicy::shouldNoIndexPath', $src);
         $this->assertStringContainsString('$request->getUri()->getPath()', $src);
         $this->assertStringContainsString('<meta name="robots" content="noindex, nofollow">', $src);
@@ -43,6 +44,8 @@ class MessagingIndexingPolicyTest extends TestCase
             'messages trailing slash' => ['/messages/'],
             'live room' => ['/messages/live/x'],
             'direct conversation' => ['/messages/direct/1'],
+            'notifications' => ['/notifications'],
+            'notifications trailing slash' => ['/notifications/'],
         ];
     }
 
@@ -54,6 +57,7 @@ class MessagingIndexingPolicyTest extends TestCase
             'tag' => ['/t/gm'],
             'profile' => ['/u/tech_x'],
             'false prefix messaging' => ['/messaging'],
+            'false prefix notification' => ['/notification'],
         ];
     }
 }

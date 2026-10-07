@@ -7,15 +7,26 @@ import Button from 'flarum/common/components/Button';
 import MessagesPage from './components/MessagesPage.js';
 import MessagesNavButton from './components/MessagesNavButton.js';
 import MessagesComposeButton from './components/MessagesComposeButton.js';
+import NotificationsPage from './components/NotificationsPage.js';
 import MessagingState from './state/MessagingState.js';
 import createMessagingService from './createMessagingService.js';
 import canOfferMessageAction from './utils/canOfferMessageAction.js';
 import { isUnifiedMessagesRoute } from './utils/messagingRoutes.js';
+import { bindExistingRealtime, createNotificationInbox } from './notifications/createNotificationInbox.js';
 
 app.initializers.add('flatrate-messaging-ui', () => {
   app.routes['flatrate-messaging.index'] = { path: '/messages', component: MessagesPage };
   app.routes['flatrate-messaging.live'] = { path: '/messages/live/:roomKey', component: MessagesPage };
   app.routes['flatrate-messaging.direct'] = { path: '/messages/direct/:conversationId', component: MessagesPage };
+
+  if (app.routes.notifications) {
+    app.routes.notifications.component = NotificationsPage;
+    app.routes['flatrate-notifications.index'] = app.routes.notifications;
+  } else {
+    const notificationsRoute = { path: '/notifications', component: NotificationsPage };
+    app.routes.notifications = notificationsRoute;
+    app.routes['flatrate-notifications.index'] = notificationsRoute;
+  }
 
   app.flatrateMessagingState = new MessagingState({
     sources: () => (app.flatrateMessaging ? app.flatrateMessaging.sources() : { live: null, direct: null }),
@@ -25,6 +36,16 @@ app.initializers.add('flatrate-messaging-ui', () => {
     app,
     state: app.flatrateMessagingState,
   });
+
+  const inbox = createNotificationInbox(app);
+  app.flatrateNotificationState = inbox.state;
+  app.flatrateNotifications = inbox;
+  bindExistingRealtime(app, inbox);
+  setTimeout(() => {
+    if (app.session && app.session.user) {
+      inbox.refresh();
+    }
+  }, 0);
 
   extend(HeaderSecondary.prototype, 'items', function (items) {
     if (!app.session.user) {

@@ -12,7 +12,8 @@ final class MessagingIndexingPolicy
         $normalized = self::normalizePath($path);
 
         return $normalized === '/messages'
-            || str_starts_with($normalized, '/messages/');
+            || str_starts_with($normalized, '/messages/')
+            || $normalized === '/notifications';
     }
 
     public static function normalizePath(string $path): string
