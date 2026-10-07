@@ -141,7 +141,8 @@ class NotificationsRolloutPolicyTest extends TestCase
         $this->assertLessThan($counted, $denied);
 
         $extend = file_get_contents(dirname(__DIR__).'/extend.php');
-        $this->assertStringContainsString(NotificationsRolloutPolicy::FORUM_ATTRIBUTE, $extend);
+        $this->assertSame('flatrate-messaging-ui.notifications_available', NotificationsRolloutPolicy::FORUM_ATTRIBUTE);
+        $this->assertStringContainsString('->attribute(NotificationsRolloutPolicy::FORUM_ATTRIBUTE,', $extend);
         $this->assertStringNotContainsString('serializeToForum', $extend);
         $this->assertStringContainsString("->default(NotificationsRolloutPolicy::ADMIN_PREVIEW_SETTING, '0')", $extend);
         $this->assertStringContainsString("->default(NotificationsRolloutPolicy::MEMBER_BETA_SETTING, '0')", $extend);
