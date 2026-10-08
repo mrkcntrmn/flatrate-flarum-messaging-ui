@@ -1,0 +1,38 @@
+name: Temporary Live Header Asset Rebuild
+on:
+  push:
+    branches:
+      - feat/forum-live-header-unify-001-messaging
+    paths:
+      - .github/workflows/live-header-asset-rebuild.yml
+permissions:
+  contents: write
+jobs:
+  dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+      - name: Build exact branch JS assets
+        working-directory: js
+        run: |
+          npm ci
+          npm run build
+      - name: Commit only built dist to same feature branch
+        run: |
+          set -euo pipefail
+          git add js/dist
+          if git diff --cached --quiet; then
+            echo "Assets already match"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build: refresh Live header JS dist [skip ci]"
+          git push origin HEAD:refs/heads/feat/forum-live-header-unify-001-messaging
