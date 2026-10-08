@@ -713,9 +713,35 @@
   justify-content: center;
 }
 
+// Desktop Live header: equal 44px side tracks keep the title on the
+// conversation-pane center while Back stays hidden. Direct headers stay flex.
+.MessagesConversationHeader--live {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  column-gap: 0;
+  gap: 0;
+  align-items: center;
+}
+
+.MessagesConversationHeader--live .MessagesConversationHeader-back {
+  grid-column: 1;
+  width: 44px;
+  min-width: 44px;
+  justify-self: center;
+}
+
 .MessagesConversationHeader--live .MessagesConversationHeader-main {
+  grid-column: 2;
   flex: 1 1 auto;
+  justify-content: center;
   min-width: 0;
+}
+
+.MessagesConversationHeader--live .MessagesConversationHeader-overflow {
+  grid-column: 3;
+  width: 44px;
+  min-width: 44px;
+  justify-self: center;
 }
 
 .MessagesConversationHeader--live .MessagesConversationHeader-copy {

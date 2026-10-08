@@ -14,9 +14,18 @@ import { createPeopleSearchController, findUsersByQuery, MIN_REMOTE_USER_QUERY_L
 import { collectFollowedUsers, suggestPeople } from '../utils/suggestPeople.js';
 import flattenDiscoveryOptions from '../utils/flattenDiscoveryOptions.js';
 import resolveConversationBackHref from '../utils/resolveConversationBackHref.js';
+import resolveLiveHeaderConversation from '../utils/resolveLiveHeaderConversation.js';
 
 /** Additive V2 provider presentation contract (shell → providers). */
 export const MESSAGES_PRESENTATION_VERSION = 2;
+
+function currentSessionUserId() {
+  const user = app.session && app.session.user;
+  if (!user) return null;
+  const id = typeof user.id === 'function' ? user.id() : user.id;
+  if (id == null || id === '') return null;
+  return String(id);
+}
 
 export default class MessagesPage extends Page {
   oninit(vnode) {
@@ -189,9 +198,7 @@ export default class MessagesPage extends Page {
             aria-expanded={discoveryActive ? 'true' : 'false'}
             aria-controls="messages-discovery-results"
             aria-autocomplete="list"
-            aria-activedescendant={
-              this.activeDiscoveryIndex >= 0 ? `messages-discovery-option-${this.activeDiscoveryIndex}` : null
-            }
+            aria-activedescendant={this.activeDiscoveryIndex >= 0 ? `messages-discovery-option-${this.activeDiscoveryIndex}` : null}
             placeholder={app.translator.trans('flatrate-messaging-ui.forum.page.search_placeholder')}
             value={this.query}
             onfocus={() => {
@@ -343,12 +350,19 @@ export default class MessagesPage extends Page {
     }
 
     const conversation =
-      (state && state.findBySelection(selected.kind, selected.key)) || {
-        kind: selected.kind,
-        sourceId: selected.key,
-        id: `${selected.kind}:${selected.key}`,
-        title: selected.kind === 'live' && selected.key === 'community-general-live' ? 'FlatRate.wiki Live' : selected.key,
-      };
+      selected.kind === 'live'
+        ? resolveLiveHeaderConversation({
+            provider: sources.live,
+            directoryConversation: state && state.findBySelection('live', selected.key),
+            roomKey: selected.key,
+            sessionUserId: currentSessionUserId(),
+          }).conversation
+        : (state && state.findBySelection(selected.kind, selected.key)) || {
+            kind: selected.kind,
+            sourceId: selected.key,
+            id: `${selected.kind}:${selected.key}`,
+            title: selected.key,
+          };
 
     if (selected.kind === 'direct') {
       const paneStatus = directConversationPaneStatus(state?.selection, selected.key);
@@ -406,8 +420,7 @@ export default class MessagesPage extends Page {
   }
 
   conversationChrome(body, { kind = null, conversation = null } = {}) {
-    const paneClass =
-      'MessagesPage-conversationPane' + (kind ? ` MessagesPage-conversationPane--${kind}` : '');
+    const paneClass = 'MessagesPage-conversationPane' + (kind ? ` MessagesPage-conversationPane--${kind}` : '');
     // Registry must be the Flarum app — calling discoverSources without app
     // yields null providers and drops Live overflow contributions.
     const sources = discoverSources(app);
