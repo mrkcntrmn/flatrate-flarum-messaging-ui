@@ -24,6 +24,21 @@ function stateWith(gate) {
   });
 }
 
+test('overlapping refreshes share one load and still publish rows', async () => {
+  const gate = deferred();
+  const state = stateWith(gate);
+  state.setSignedIn(true);
+  state.setAvailable(true);
+  state.setActor('1');
+  const first = state.refresh();
+  const second = state.refresh();
+  gate.release();
+  const [a, b] = await Promise.all([first, second]);
+  assert.equal(a, 'rows');
+  assert.equal(b, 'rows');
+  assert.equal(state.rows().length, 1);
+});
+
 test('logout, account switch, and gate loss drop in-flight rows', async () => {
   const logoutGate = deferred();
   const logout = stateWith(logoutGate);

@@ -102,6 +102,16 @@ export default class NotificationInboxState {
   }
 
   async refresh() {
+    if (this._refreshInFlight) {
+      return this._refreshInFlight;
+    }
+    this._refreshInFlight = this.runRefresh().finally(() => {
+      this._refreshInFlight = null;
+    });
+    return this._refreshInFlight;
+  }
+
+  async runRefresh() {
     if (!this.signedIn || this.available !== true) {
       return this.emptyState();
     }
