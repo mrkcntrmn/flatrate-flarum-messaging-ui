@@ -288,11 +288,12 @@ test('Live conversation header status reuses liveUserCount without inventing zer
   assert.match(header, /resolveLiveHeaderStatus/);
   assert.match(header, /MessagesConversationHeader--generalLive/);
   assert.match(header, /MessagesConversationHeader-generalCopy/);
-  assert.match(header, /MessagesConversationHeader-title">FlatRate\.wiki</);
+  assert.ok(header.includes("isGeneralLive ? 'FLATRATE.WIKI' : title"));
   assert.match(header, /MessagesConversationHeader-generalLiveStatus/);
   assert.match(header, /MessagesConversationHeader-liveCount/);
   assert.match(header, /<span>LIVE<\/span>/);
   assert.doesNotMatch(header, /MessagesConversationHeader-liveChatIcon/);
+  assert.doesNotMatch(header, /fas fa-comments/);
   assert.match(header, /onAllMessages/);
   assert.match(header, /return 'FlatRate\.wiki'/);
   assert.doesNotMatch(header, /return 'FlatRate\.wiki Live'/);
@@ -331,15 +332,16 @@ test('General Live header keeps FLATRATE.WIKI above PUBLIC globe LIVE count in l
   const header = read('js/src/forum/components/MessagesConversationHeader.js');
   const less = read('resources/less/forum.less');
 
-  assert.match(header, /isGeneralLive \? \(/);
+  assert.match(header, /isPublicLive \? \(/);
   assert.match(header, /MessagesConversationHeader-generalCopy/);
-  assert.match(header, /MessagesConversationHeader-title">FlatRate\.wiki</);
+  assert.ok(header.includes("isGeneralLive ? 'FLATRATE.WIKI' : title"));
   assert.match(header, /MessagesConversationHeader-generalLiveStatus/);
   assert.match(header, /<span>PUBLIC<\/span>/);
   assert.match(header, /fas fa-globe MessagesConversationHeader-liveGlobe/);
   assert.match(header, /<span>LIVE<\/span>/);
   assert.match(header, /MessagesConversationHeader-liveCount/);
   assert.doesNotMatch(header, /MessagesConversationHeader-liveChatIcon/);
+  assert.doesNotMatch(header, /fas fa-comments/);
 
   assert.match(
     less,
@@ -384,4 +386,18 @@ test('mobile conversation header uses equal 44px side slots for geometric center
   );
   assert.match(less, /\.MessagesPage\.viewing-conversation \.MessagesConversationHeader-copy/);
   assert.match(less, /back \| title \| overflow|44px \| 1fr \| 44px/);
+});
+
+test('All public Live headers share title above lime globe count; Direct keeps avatar', () => {
+  const header = read('js/src/forum/components/MessagesConversationHeader.js');
+  const less = read('resources/less/forum.less');
+  assert.ok(header.includes("isGeneralLive ? 'FLATRATE.WIKI' : title"));
+  assert.match(header, /isPublicLive \? \(/);
+  assert.match(header, /MessagesConversationHeader-generalCopy/);
+  assert.match(header, /MessagesConversationHeader-generalLiveStatus/);
+  assert.doesNotMatch(header, /fa-comments/);
+  assert.match(header, /kind !== 'live'/);
+  assert.match(header, /MessagesConversationHeader-avatar/);
+  assert.match(less, /\.MessagesConversationHeader-generalLiveStatus \.MessagesConversationHeader-liveGlobe[\s\S]*color:\s*#66ff00/);
+  assert.match(less, /grid-template-columns:\s*44px minmax\(0,\s*1fr\) 44px/);
 });
