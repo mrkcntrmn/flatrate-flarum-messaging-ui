@@ -10,6 +10,8 @@ const SAFE_TITLES = {
   newPost: 'replied to your discussion',
   reply: 'replied to your discussion',
   userMentioned: 'mentioned you',
+  postMentioned: 'replied to your post',
+  groupMentioned: "mentioned a group you're a member of",
 };
 
 export function conversationIdFromNotificationContent(content) {

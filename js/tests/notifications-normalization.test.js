@@ -21,6 +21,24 @@ test('forum normalization drops message bodies and direct duplicates', () => {
     excerpt: 'secret',
   });
   assert.equal(kept.title, 'tech_#725 replied to your discussion');
+  assert.equal(
+    normalizeForumNotification({
+      id: '18',
+      contentType: 'postMentioned',
+      fromUser: { id: '8', username: 'tech_8', displayName: 'tech_8' },
+      href: '/d/9/5',
+    }).title,
+    'tech_8 replied to your post'
+  );
+  assert.equal(
+    normalizeForumNotification({
+      id: '19',
+      contentType: 'groupMentioned',
+      fromUser: { id: '2', username: 'admin_b', displayName: 'admin_b' },
+      href: '/d/9/13',
+    }).title,
+    "admin_b mentioned a group you're a member of"
+  );
   assert.equal(kept.source, 'forum');
   for (const field of forbidden) {
     assert.equal(Object.hasOwn(kept, field), false);
