@@ -19,6 +19,7 @@ export default class MessagesConversationHeader extends Component {
     const title = resolveHeaderTitle(kind, conversation);
     const liveStatus = resolveLiveHeaderStatus(kind, conversation);
     const isGeneralLive = kind === 'live' && conversation?.sourceId === 'community-general-live';
+    const isPublicLive = kind === 'live' && conversation?.privacy === 'public';
     const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_menu'));
     const shellItems = buildShellHeaderOverflowItems({ onBack: onAllMessages || onBack });
     const items = mergeHeaderOverflowItems(shellItems, providerOverflowItems).toArray().filter(Boolean);
@@ -40,9 +41,9 @@ export default class MessagesConversationHeader extends Component {
           }}
         />
         <div className="MessagesConversationHeader-main">
-          {isGeneralLive ? (
+          {isPublicLive ? (
             <div className="MessagesConversationHeader-generalCopy">
-              <h2 className="MessagesConversationHeader-title">FlatRate.wiki</h2>
+              <h2 className="MessagesConversationHeader-title">{isGeneralLive ? 'FLATRATE.WIKI' : title}</h2>
               <div
                 className="MessagesConversationHeader-generalLiveStatus"
                 aria-label={generalLiveStatusLabel(liveStatus)}
@@ -57,13 +58,15 @@ export default class MessagesConversationHeader extends Component {
             </div>
           ) : (
             <>
-              {conversation?.avatarUrl ? (
-                <img className="MessagesConversationHeader-avatar" src={conversation.avatarUrl} alt="" />
-              ) : (
-                <span className="MessagesConversationHeader-icon" aria-hidden="true">
-                  <i className={conversation?.icon || (kind === 'live' ? 'fas fa-comments' : 'fas fa-user')} />
-                </span>
-              )}
+              {kind !== 'live' ? (
+                conversation?.avatarUrl ? (
+                  <img className="MessagesConversationHeader-avatar" src={conversation.avatarUrl} alt="" />
+                ) : (
+                  <span className="MessagesConversationHeader-icon" aria-hidden="true">
+                    <i className={conversation?.icon || 'fas fa-user'} />
+                  </span>
+                )
+              ) : null}
               <div className="MessagesConversationHeader-copy">
                 <h2 className="MessagesConversationHeader-title">{title}</h2>
                 {liveStatus ? (
