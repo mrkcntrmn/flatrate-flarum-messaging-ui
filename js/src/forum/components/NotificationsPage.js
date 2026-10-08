@@ -22,13 +22,20 @@ export default class NotificationsPage extends Page {
     }
     syncNotificationAccess(app, state);
     state.setSignedIn(!!app.session.user);
+    this._refresh = null;
     if (app.session.user && notificationsAvailable(app)) {
-      state.refresh().then(() => m.redraw());
+      this._refresh = state.refresh();
+      this._refresh.then(() => m.redraw());
     }
   }
 
   oncreate(vnode) {
     super.oncreate(vnode);
+    // A hard load can resolve the inbox before this page is mounted. Attaching
+    // again after mount redraws the settled empty or row state.
+    if (this._refresh && typeof this._refresh.then === 'function') {
+      this._refresh.then(() => m.redraw());
+    }
     const state = app.flatrateNotificationState;
     const scroller = this.element && this.element.querySelector('.NotificationInboxList');
     if (scroller && state) {
