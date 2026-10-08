@@ -25,6 +25,8 @@ test('tracked forum dist embeds 010UI directory Live presence contract', () => {
   const dist = readFileSync(DIST, 'utf8');
   assert.match(dist, /ConversationRow-livePresence/);
   assert.match(dist, /liveUserCount/);
+  assert.match(dist, /headerPending/);
+  assert.match(dist, /getSelectedConversation/);
   assert.match(dist, /messages-live-accent/);
   assert.match(dist, /users live/);
   // Legacy privacy-text span must not survive in the production bundle.

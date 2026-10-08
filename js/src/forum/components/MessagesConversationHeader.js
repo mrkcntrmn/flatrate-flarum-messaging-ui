@@ -5,9 +5,7 @@ import Dropdown from 'flarum/common/components/Dropdown';
 import extractText from 'flarum/common/utils/extractText';
 import { readDisplayText } from '../utils/normalizeConversation.js';
 import resolveLiveHeaderStatus from '../utils/resolveLiveHeaderStatus.js';
-import buildShellHeaderOverflowItems, {
-  mergeHeaderOverflowItems,
-} from '../utils/buildShellHeaderOverflowItems.js';
+import buildShellHeaderOverflowItems, { mergeHeaderOverflowItems } from '../utils/buildShellHeaderOverflowItems.js';
 
 /**
  * Shell-owned conversation chrome. Direct and Live share back | title | ⋮.
@@ -16,10 +14,17 @@ import buildShellHeaderOverflowItems, {
 export default class MessagesConversationHeader extends Component {
   view() {
     const { kind, conversation, onBack, onAllMessages, providerOverflowItems = null } = this.attrs;
-    const title = resolveHeaderTitle(kind, conversation);
-    const liveStatus = resolveLiveHeaderStatus(kind, conversation);
-    const isGeneralLive = kind === 'live' && conversation?.sourceId === 'community-general-live';
-    const isPublicLive = kind === 'live' && conversation?.privacy === 'public';
+    const headerPending = conversation?.headerPending === true;
+    const headerUnavailable = conversation?.headerUnavailable === true;
+    const suppressLive = headerPending || headerUnavailable;
+    const title = headerPending
+      ? ''
+      : headerUnavailable
+        ? extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_unavailable'))
+        : resolveHeaderTitle(kind, conversation);
+    const liveStatus = suppressLive ? null : resolveLiveHeaderStatus(kind, conversation);
+    const isGeneralLive = !suppressLive && kind === 'live' && conversation?.sourceId === 'community-general-live';
+    const isPublicLive = !suppressLive && kind === 'live' && conversation?.privacy === 'public';
     const menuLabel = extractText(app.translator.trans('flatrate-messaging-ui.forum.page.conversation_menu'));
     const shellItems = buildShellHeaderOverflowItems({ onBack: onAllMessages || onBack });
     const items = mergeHeaderOverflowItems(shellItems, providerOverflowItems).toArray().filter(Boolean);
@@ -29,8 +34,11 @@ export default class MessagesConversationHeader extends Component {
         className={
           'MessagesConversationHeader' +
           (kind ? ` MessagesConversationHeader--${kind}` : '') +
-          (isGeneralLive ? ' MessagesConversationHeader--generalLive' : '')
+          (isGeneralLive ? ' MessagesConversationHeader--generalLive' : '') +
+          (headerPending ? ' MessagesConversationHeader--pending' : '') +
+          (headerUnavailable ? ' MessagesConversationHeader--unavailable' : '')
         }
+        aria-busy={headerPending ? 'true' : undefined}
       >
         <Button
           className="Button Button--icon Button--flat MessagesConversationHeader-back"
@@ -44,16 +52,11 @@ export default class MessagesConversationHeader extends Component {
           {isPublicLive ? (
             <div className="MessagesConversationHeader-generalCopy">
               <h2 className="MessagesConversationHeader-title">{isGeneralLive ? 'FLATRATE.WIKI' : title}</h2>
-              <div
-                className="MessagesConversationHeader-generalLiveStatus"
-                aria-label={generalLiveStatusLabel(liveStatus)}
-              >
+              <div className="MessagesConversationHeader-generalLiveStatus" aria-label={generalLiveStatusLabel(liveStatus)}>
                 <span>PUBLIC</span>
                 <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
                 <span>LIVE</span>
-                {liveStatus && liveStatus.count != null ? (
-                  <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span>
-                ) : null}
+                {liveStatus && liveStatus.count != null ? <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span> : null}
               </div>
             </div>
           ) : (
@@ -74,9 +77,7 @@ export default class MessagesConversationHeader extends Component {
                     <span>{liveStatus.privacy}</span>
                     <i className="fas fa-globe MessagesConversationHeader-liveGlobe" aria-hidden="true" />
                     <span>LIVE</span>
-                    {liveStatus.count != null ? (
-                      <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span>
-                    ) : null}
+                    {liveStatus.count != null ? <span className="MessagesConversationHeader-liveCount">{liveStatus.count}</span> : null}
                   </div>
                 ) : null}
               </div>
