@@ -12,7 +12,9 @@ import MessagingState from './state/MessagingState.js';
 import createMessagingService from './createMessagingService.js';
 import canOfferMessageAction from './utils/canOfferMessageAction.js';
 import { isUnifiedMessagesRoute } from './utils/messagingRoutes.js';
+import IndexPage from 'flarum/forum/components/IndexPage';
 import { bindExistingRealtime, createNotificationInbox, syncNotificationAccess } from './notifications/createNotificationInbox.js';
+import { bindEligibilityRevalidation } from './notifications/eligibilityRevalidation.js';
 import { notificationsAvailable } from './notifications/notificationsAvailability.js';
 
 app.initializers.add('flatrate-messaging-ui', () => {
@@ -43,6 +45,11 @@ app.initializers.add('flatrate-messaging-ui', () => {
   app.flatrateNotifications = inbox;
   bindExistingRealtime(app, inbox);
   bindSessionLifecycle(app, inbox);
+  bindEligibilityRevalidation(app, inbox);
+  syncNotificationAccess(app, inbox.state);
+  extend(IndexPage.prototype, 'oninit', function onMainEligibility() {
+    if (inbox.revalidate) inbox.revalidate('main');
+  });
   setTimeout(() => {
     if (app.session && app.session.user && notificationsAvailable(app)) {
       // The header plane reads this count during view. Refresh settles after

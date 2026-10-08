@@ -39,6 +39,10 @@ test('message action requires one other messageable member', () => {
   assert.equal(eligible({ kind: 'groupMentioned' }), true);
   assert.equal(eligible({ kind: 'reply' }), false);
   assert.equal(eligible({ kind: 'userSuspended' }), false);
+  assert.equal(eligible({ kind: 'system' }), false);
+  assert.equal(eligible({ kind: 'moderation' }), false);
+  assert.equal(eligible({ kind: 'security' }), false);
+  assert.equal(eligible({ kind: 'unknownEvent' }), false);
   assert.equal(eligible({ kind: '' }), false);
   assert.equal(eligible({ kind: 'forum' }), false);
 });
