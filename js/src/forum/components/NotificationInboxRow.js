@@ -3,6 +3,7 @@ import Link from 'flarum/common/components/Link';
 import avatar from 'flarum/common/helpers/avatar';
 import humanTime from 'flarum/common/helpers/humanTime';
 import { rowActions } from '../notifications/rowActions.js';
+import { markForumNotificationRead } from '../notifications/markForumNotificationRead.js';
 
 function storedUser(actor) {
   if (!actor || actor.id == null || !app.store || typeof app.store.getById !== 'function') {
@@ -21,6 +22,14 @@ function actorModel(actor) {
 }
 
 export default class NotificationInboxRow {
+  oncreate(vnode) {
+    vnode.dom.addEventListener('click', (event) => {
+      if (event.target.closest('.NotificationInboxRow-target')) {
+        markForumNotificationRead(app.store, vnode.attrs.row);
+      }
+    });
+  }
+
   view(vnode) {
     const row = vnode.attrs.row;
     const actions = rowActions(row);

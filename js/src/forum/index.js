@@ -12,7 +12,7 @@ import MessagingState from './state/MessagingState.js';
 import createMessagingService from './createMessagingService.js';
 import canOfferMessageAction from './utils/canOfferMessageAction.js';
 import { isUnifiedMessagesRoute } from './utils/messagingRoutes.js';
-import { bindExistingRealtime, createNotificationInbox } from './notifications/createNotificationInbox.js';
+import { bindExistingRealtime, createNotificationInbox, syncNotificationAccess } from './notifications/createNotificationInbox.js';
 import { notificationsAvailable } from './notifications/notificationsAvailability.js';
 
 app.initializers.add('flatrate-messaging-ui', () => {
@@ -42,9 +42,12 @@ app.initializers.add('flatrate-messaging-ui', () => {
   app.flatrateNotificationState = inbox.state;
   app.flatrateNotifications = inbox;
   bindExistingRealtime(app, inbox);
+  bindSessionLifecycle(app, inbox);
   setTimeout(() => {
     if (app.session && app.session.user && notificationsAvailable(app)) {
-      inbox.refresh();
+      // The header plane reads this count during view. Refresh settles after
+      // the first paint, so redraw or the idle white icon stays up over a known unread count.
+      inbox.refresh().then(() => m.redraw());
     }
   }, 0);
 
@@ -98,3 +101,27 @@ app.initializers.add('flatrate-messaging-ui', () => {
     );
   });
 });
+
+function bindSessionLifecycle(app, inbox) {
+  const session = app.session;
+  if (!session) return;
+  if (typeof session.logout === 'function' && !session.logout.flatrateNotificationsBound) {
+    const logout = session.logout.bind(session);
+    const wrapped = function (...args) {
+      inbox.state.setSignedIn(false);
+      return logout(...args);
+    };
+    wrapped.flatrateNotificationsBound = true;
+    session.logout = wrapped;
+  }
+  if (typeof session.login === 'function' && !session.login.flatrateNotificationsBound) {
+    const login = session.login.bind(session);
+    const wrapped = function (user, ...args) {
+      const result = login(user, ...args);
+      syncNotificationAccess(app, inbox.state);
+      return result;
+    };
+    wrapped.flatrateNotificationsBound = true;
+    session.login = wrapped;
+  }
+}

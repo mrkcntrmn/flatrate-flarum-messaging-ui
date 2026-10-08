@@ -26,6 +26,8 @@ test('notifications route is canonical and hard-load back falls through to MAIN'
   assert.match(index, /flatrate-notifications\.index/);
   assert.match(index, /path: '\/notifications'/);
   assert.match(index, /routes\.notifications\.component = NotificationsPage/);
+  assert.match(index, /session\.logout = wrapped/);
+  assert.match(index, /inbox\.state\.setSignedIn\(false\)/);
 });
 
 test('scroll position is restored per filter', () => {
