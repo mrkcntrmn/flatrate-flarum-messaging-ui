@@ -41,7 +41,8 @@ test('an unavailable actor does not load the inbox and falls back to MAIN', () =
   assert.match(page, /notificationsAvailable\(app\)/);
   assert.match(page, /MAIN/);
   assert.match(page, /mode="signed-out"/);
-  assert.match(inbox, /!notificationsAvailable\(app\)/);
+  assert.match(inbox, /!notificationsAvailable\(app\) \|\| inbox\.state\.available !== true/);
+  assert.match(inbox, /state\.available !== true/);
   assert.doesNotMatch(page, /markAsRead|unread_messages|unreaded/);
   assert.doesNotMatch(inbox, /markAsRead|unread_messages|unreaded/);
 });

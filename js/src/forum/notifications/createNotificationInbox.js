@@ -1,15 +1,25 @@
 import NotificationInboxState from './NotificationInboxState.js';
 import { forumInputFromResource } from './forumInputFromResource.js';
 import { resolveForumNotificationTarget } from './forumNotificationTarget.js';
-import { notificationsAvailable } from './notificationsAvailability.js';
+import { NOTIFICATIONS_AVAILABLE_ATTRIBUTE, notificationsAvailable } from './notificationsAvailability.js';
 import { unifiedUnread } from './unifiedUnread.js';
 
 export function syncNotificationAccess(app, state) {
   const user = app.session?.user || null;
   const id = user && typeof user.id === 'function' ? user.id() : null;
-  state.setAvailable(notificationsAvailable(app));
   state.setActor(id);
   state.setSignedIn(!!user);
+  // The forum attribute is the decision at document generation. Later gate
+  // changes arrive through the unread-count probe, which must not be overwritten
+  // by this stale boolean on every badge redraw.
+  const rawAvailable = app.forum && typeof app.forum.attribute === 'function'
+    ? app.forum.attribute(NOTIFICATIONS_AVAILABLE_ATTRIBUTE)
+    : undefined;
+  if (!state.payloadSeeded && user && (rawAvailable === true || rawAvailable === false)) {
+    state.payloadSeeded = true;
+    state.revalidationActive = rawAvailable === true;
+    state.setAvailable(rawAvailable === true);
+  }
 }
 
 export function bindExistingRealtime(app, inbox) {
@@ -24,7 +34,7 @@ export function bindExistingRealtime(app, inbox) {
     }
     channel.flatrateNotificationsBound = true;
     channel.bind('notification', () => {
-      if (!notificationsAvailable(app)) {
+      if (!notificationsAvailable(app) || inbox.state.available !== true) {
         return;
       }
       inbox.state.refreshForumCount();
@@ -44,14 +54,14 @@ export function createNotificationInbox(app) {
     state,
     refresh() {
       syncNotificationAccess(app, state);
-      if (!app.session?.user || !notificationsAvailable(app)) {
+      if (!app.session?.user || state.available !== true) {
         return Promise.resolve(state.emptyState());
       }
       return state.refresh();
     },
     badge() {
       syncNotificationAccess(app, state);
-      if (!app.session?.user || !notificationsAvailable(app)) {
+      if (!app.session?.user || state.available !== true) {
         return { status: 'known', count: null, signedOut: !app.session?.user };
       }
       const direct = providerUnread(app, 'direct');

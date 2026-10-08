@@ -1,3 +1,4 @@
+import { classifyEligibilityFailure } from './eligibilityRevalidation.js';
 import { filterNotificationRows, parseNotificationFilter, sortNotificationRows } from './notificationFilters.js';
 import { normalizeForumNotification } from './normalizeForumNotification.js';
 import { normalizeMessageConversations } from './normalizeMessageConversation.js';
@@ -24,6 +25,9 @@ export default class NotificationInboxState {
     this.direct = blankMessages();
     this.live = blankMessages();
     this._generation = 0;
+    this._eligibilitySeq = 0;
+    this.payloadSeeded = false;
+    this.revalidationActive = false;
   }
 
   setFilter(filter) {
@@ -35,6 +39,10 @@ export default class NotificationInboxState {
     const next = !!signedIn;
     if (next !== this.signedIn) {
       this._generation += 1;
+      if (!next) {
+        this._eligibilitySeq += 1;
+        this.available = false;
+      }
     }
     this.signedIn = next;
     if (!this.signedIn) {
@@ -46,11 +54,46 @@ export default class NotificationInboxState {
   setActor(actorId) {
     const next = actorId == null || actorId === '' ? null : String(actorId);
     if (next !== this.actorId) {
+      const switching = this.actorId != null;
       this._generation += 1;
+      if (switching) {
+        this._eligibilitySeq += 1;
+        this.available = false;
+      }
       this.clearPresentation();
     }
     this.actorId = next;
     return this.actorId;
+  }
+
+  beginEligibilityProbe() {
+    this._eligibilitySeq += 1;
+    return this._eligibilitySeq;
+  }
+
+  /**
+   * Apply one probe for the actor that started it.
+   * A newer probe, a signed-out session, or a different actor drops the result.
+   * authorized confirms access. denied, signed-out, and unconfirmed fail closed
+   * for presentation only.
+   */
+  applyEligibility(seq, actorId, result) {
+    const actor = actorId == null || actorId === '' ? null : String(actorId);
+    if (seq !== this._eligibilitySeq || actor !== this.actorId) {
+      return false;
+    }
+    if (result === 'authorized') {
+      if (!this.signedIn) return false;
+      this.revalidationActive = true;
+      this.setAvailable(true);
+      return true;
+    }
+    if (result === 'signed-out') {
+      this.setSignedIn(false);
+      return true;
+    }
+    this.setAvailable(false);
+    return true;
   }
 
   setAvailable(available) {
@@ -117,6 +160,7 @@ export default class NotificationInboxState {
     }
     const generation = ++this._generation;
     const actorId = this.actorId;
+    const eligibilitySeq = this._eligibilitySeq;
     this.forum = { ...this.forum, status: 'loading', rowsStatus: 'loading' };
     this.direct = { ...this.direct, status: 'loading' };
     this.live = { ...this.live, status: 'loading' };
@@ -129,6 +173,12 @@ export default class NotificationInboxState {
     ]);
 
     if (!this.sameView(generation, actorId)) {
+      return this.emptyState();
+    }
+
+    const eligibility = eligibilityFromLoad(forumCount.error) || eligibilityFromLoad(forumRows.error);
+    if (eligibility && eligibility !== 'authorized') {
+      this.applyEligibility(eligibilitySeq, actorId, eligibility);
       return this.emptyState();
     }
 
@@ -155,8 +205,14 @@ export default class NotificationInboxState {
     if (!this.signedIn || this.available !== true) return;
     const generation = this._generation;
     const actorId = this.actorId;
+    const eligibilitySeq = this._eligibilitySeq;
     const forumCount = await capture(() => this.loaders.loadForumCount?.());
     if (!this.sameView(generation, actorId)) return;
+    const eligibility = eligibilityFromLoad(forumCount.error);
+    if (eligibility && eligibility !== 'authorized') {
+      this.applyEligibility(eligibilitySeq, actorId, eligibility);
+      return;
+    }
     this.forum = {
       ...this.forum,
       status: numberStatus(forumCount),
@@ -230,6 +286,10 @@ function conversationIds(rows) {
     }
   }
   return ids;
+}
+
+function eligibilityFromLoad(error) {
+  return classifyEligibilityFailure(error);
 }
 
 async function capture(run) {
