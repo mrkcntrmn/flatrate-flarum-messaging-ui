@@ -35,7 +35,7 @@ test('forum payload path does not receive raw gates or the beta marker', () => {
   assert.match(read('js/src/admin/index.js'), /notifications_member_enabled/);
 });
 
-test('an unavailable actor does not load the inbox and falls back to MAIN', () => {
+test('an unavailable actor does not load the unified inbox', () => {
   const page = read('js/src/forum/components/NotificationsPage.js');
   const inbox = read('js/src/forum/notifications/createNotificationInbox.js');
   assert.match(page, /notificationsAvailable\(app\)/);
@@ -45,4 +45,15 @@ test('an unavailable actor does not load the inbox and falls back to MAIN', () =
   assert.match(inbox, /state\.available !== true/);
   assert.doesNotMatch(page, /markAsRead|unread_messages|unreaded/);
   assert.doesNotMatch(inbox, /markAsRead|unread_messages|unreaded/);
+});
+
+test('an unavailable actor keeps the native Flarum notifications route', () => {
+  const index = read('js/src/forum/index.js');
+  const route = read('js/src/forum/notifications/notificationsRouteComponent.js');
+  assert.match(index, /nativeNotificationsPage/);
+  assert.match(index, /createNotificationsRouteComponent/);
+  assert.match(route, /app\?\.flatrateNotificationState\?\.available === true/);
+  assert.match(route, /selectNotificationsRouteComponent/);
+  assert.match(route, /available === true/);
+  assert.match(route, /return nativeComponent/);
 });
