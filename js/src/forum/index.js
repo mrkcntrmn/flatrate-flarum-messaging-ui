@@ -16,16 +16,23 @@ import IndexPage from 'flarum/forum/components/IndexPage';
 import { bindExistingRealtime, createNotificationInbox, syncNotificationAccess } from './notifications/createNotificationInbox.js';
 import { bindEligibilityRevalidation } from './notifications/eligibilityRevalidation.js';
 import { notificationsAvailable } from './notifications/notificationsAvailability.js';
+import { createNotificationsRouteComponent } from './notifications/notificationsRouteComponent.js';
 
 app.initializers.add('flatrate-messaging-ui', () => {
   app.routes['flatrate-messaging.index'] = { path: '/messages', component: MessagesPage };
   app.routes['flatrate-messaging.live'] = { path: '/messages/live/:roomKey', component: MessagesPage };
   app.routes['flatrate-messaging.direct'] = { path: '/messages/direct/:conversationId', component: MessagesPage };
 
-  if (app.routes.notifications) {
-    app.routes.notifications.component = NotificationsPage;
+  if (app.routes.notifications && app.routes.notifications.component) {
+    const nativeNotificationsPage = app.routes.notifications.component;
+    app.routes.notifications.component = createNotificationsRouteComponent({
+      app,
+      nativeComponent: nativeNotificationsPage,
+      unifiedComponent: NotificationsPage,
+      render: (component, attrs) => m(component, attrs),
+    });
     app.routes['flatrate-notifications.index'] = app.routes.notifications;
-  } else {
+  } else if (notificationsAvailable(app)) {
     const notificationsRoute = { path: '/notifications', component: NotificationsPage };
     app.routes.notifications = notificationsRoute;
     app.routes['flatrate-notifications.index'] = notificationsRoute;
