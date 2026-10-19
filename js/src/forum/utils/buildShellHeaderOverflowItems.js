@@ -1,20 +1,25 @@
 import app from 'flarum/forum/app';
 import Button from 'flarum/common/components/Button';
 import ItemList from 'flarum/common/utils/ItemList';
+import { omitRetiredOverflowKeys, shellHeaderOverflowPlan } from './shellOverflowPolicy.js';
 
 /** Shell-owned overflow keys — providers may not replace these. */
-export const SHELL_OVERFLOW_KEYS = new Set(['allMessages', 'newMessage']);
+export const SHELL_OVERFLOW_KEYS = new Set(['newMessage']);
 
 /**
  * Baseline conversation overflow actions owned by the Messages shell.
- * Always present when a conversation is selected; providers only append.
+ * Direct compose is the only shell-owned menu action; providers may append.
+ * Navigation back is the existing header button, not a redundant menu entry.
  */
 export default function buildShellHeaderOverflowItems({ onBack } = {}) {
   const items = new ItemList();
   const sources = app.flatrateMessaging ? app.flatrateMessaging.sources() : { direct: null };
-  const canCompose = !!sources?.direct;
+  const plan = shellHeaderOverflowPlan({ canCompose: !!sources?.direct });
 
-  if (canCompose) {
+  // Callers still pass onBack. The visible Back button owns navigation.
+  void onBack;
+
+  if (plan.includes('newMessage')) {
     items.add(
       'newMessage',
       <Button
@@ -30,19 +35,6 @@ export default function buildShellHeaderOverflowItems({ onBack } = {}) {
       100
     );
   }
-
-  items.add(
-    'allMessages',
-    <Button
-      icon="fas fa-inbox"
-      onclick={() => {
-        if (typeof onBack === 'function') onBack();
-      }}
-    >
-      {app.translator.trans('flatrate-messaging-ui.forum.page.back_to_messages')}
-    </Button>,
-    90
-  );
 
   return items;
 }
@@ -60,7 +52,7 @@ export function mergeHeaderOverflowItems(shellItems, providerItems) {
   if (shellItems) {
     merged.merge(shellItems);
   }
-  return merged;
+  return omitRetiredOverflowKeys(merged);
 }
 
 export function normalizeProviderHeaderOverflowItems(providerItems) {
