@@ -2,7 +2,10 @@
 
 **Date:** 2026-10-19
 **Work order:** FORUM-LIVE-UI-CLEANUP-001-R2
-**Status:** source implemented and locally built. Draft PR only. Not merged, not deployed, not production-verified.
+**Status:** source implemented, built, and CI-qualified on draft PR #25. Not merged, not deployed, not production-verified.
+
+**Qualified source SHA:** `4d9dffc7541f587f968b7481bd49458a98e6afc5` (JavaScript and bundle). This documentation note does not change those assets.
+**CI:** pull request run [39308834734](https://github.com/mrkcntrmn/flatrate-flarum-messaging-ui/actions/runs/39308834734) success (`validate`). Push run [39308824230](https://github.com/mrkcntrmn/flatrate-flarum-messaging-ui/actions/runs/39308824230) success on the same SHA.
 
 ## Work contract
 
@@ -59,7 +62,7 @@ PR #22's remaining branch still describes an older header shape (`isPublicLive`,
 - A second `npm run build` produced byte-identical `js/dist` output.
 - Production bundle contains `newMessage` and `fa-pen`. It does not contain `fa-inbox` or `back_to_messages`. The string `allMessages` remains only as the retired key that merge removes.
 
-GitHub check run IDs are recorded after the exact-head CI result. A green check is not a deployment.
+A green check is not a deployment. The disposable Flarum 1.8.19 compiled asset contains the retired key `allMessages` and shell set `newMessage`, and does not contain `back_to_messages`. `fa-inbox` appears only in the Font Awesome catalog, not as a menu action. Signed-in overflow was not clicked because that disposable forum has no provisioned conversations. Physical Android acceptance was not run.
 
 ## Lifecycle
 
@@ -67,8 +70,8 @@ GitHub check run IDs are recorded after the exact-head CI result. A green check 
 | --- | --- |
 | Source implemented | yes, on draft PR #25 |
 | Built | yes, local Node 20 production build |
-| CI qualified | pending the exact-head run for this revision |
-| Draft PR ready | after that run is green |
+| CI qualified | yes, runs 39308834734 and 39308824230 at `4d9dffc7` |
+| Draft PR ready | yes, still draft |
 | Merged | no |
 | Deployed | no |
 | Production verified | no |
