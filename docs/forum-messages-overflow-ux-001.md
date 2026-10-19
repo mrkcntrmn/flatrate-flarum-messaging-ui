@@ -77,3 +77,40 @@ A green check is not a deployment. The disposable Flarum 1.8.19 compiled asset c
 | Production verified | no |
 
 **Paired candidate:** `flatrate-flarum-live-chat` PR #52 hides participant chips in read-only Live Room info.
+
+## R3 signed-in acceptance
+
+**Work order:** FORUM-LIVE-UI-CLEANUP-001-R3
+**Date:** 2026-10-19
+**Product source:** unchanged at `4f50e9d084bcfe064aa6e85fa89ff2cbfad18634`
+**Bundle:** `js/dist/forum.js` sha256 `c9cb4ebe1d7eb420b081a8dda2d5187184db3797c571e28fdc2349d4a6c3e95b`
+**CI still valid for that product head:** run [39310136750](https://github.com/mrkcntrmn/flatrate-flarum-messaging-ui/actions/runs/39310136750) success. This note does not change JavaScript or `js/dist`.
+
+The R2 statement that signed-in overflow was not clicked is historical. R3 reused the same disposable Flarum 1.8.19 forum (`http://127.0.0.1:8137`, disposable database only).
+
+| Surface | Actor | Overflow | Back |
+| --- | --- | --- | --- |
+| General Live | member `r3member` | New message, Room info, Disable sounds, Enable notifications. All messages absent. Sounds and notifications toggled and restored. | `/` |
+| Toyota Live | moderator `r3mod` | New message, Room info, Disable sounds, Enable notifications. All messages absent. | `/t/toyota` |
+| Toyota Live | administrator | New message, Room settings, Disable sounds, Enable notifications. All messages absent. | `/t/toyota` |
+| Direct `/messages/direct/1` | member `r3member` | New message only. Header class `MessagesConversationHeader--direct`. Recipient title preserved. No PUBLIC/LIVE treatment. History present. | `/messages` |
+| Toyota Live exact route | member `r3member` | Not opened. The route shows "This live chat isn't available." | n/a |
+
+Keyboard: Space on the focused General Live overflow button opened the menu. Enter did not. Removed All messages is absent from the accessibility tree, not only hidden.
+
+Measured CSS viewports, authenticated:
+
+| Viewport | General Live | Toyota Live | Direct |
+| --- | --- | --- | --- |
+| 360 | overflow 0, slots 44px | overflow 0, slots 44px, menu inside the viewport | overflow 0, slots 44px |
+| 390 | overflow 0, slots 44px | overflow 0, slots 44px | overflow 0, slots 44px |
+| 412 | overflow 0, slots 44px | overflow 0, slots 44px | overflow 0, slots 44px |
+| Desktop | innerWidth 1766, scrollWidth 1751 (scrollbar rounding) | room info open, overflow 0 | innerWidth 1766, scrollWidth 1751, header `--direct` |
+
+Physical Samsung SM-S916U / Android 16 was not connected. The attached Pixel 5 / Android 14 was not treated as that device. `ANDROID_PHYSICAL_ACCEPTANCE=NOT_PROVEN`.
+
+PR #22 was not changed. Head remains `7a31f0e917c1d3939d0ff606883ab094be444e3b`. `HEADER_RECONCILIATION=PRESERVED_MAIN_HEADER_PR22_NOT_MERGED`.
+
+Local evidence, not committed: `/home/ilove/dev/_disposable/forum-live-ui-cleanup-001-r3/evidence/`.
+
+Follow-ups outside this work order: the disposable maintenance banner overlaps the mobile conversation header, and a generic full-site load alert can appear alongside an otherwise rendered conversation. Neither changed these overflow results.
