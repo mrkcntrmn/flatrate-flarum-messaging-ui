@@ -119,9 +119,10 @@ test('conversation header is shared back-title-overflow chrome', () => {
 
 test('shell owns baseline overflow actions and merges provider items', () => {
   const util = read('js/src/forum/utils/buildShellHeaderOverflowItems.js');
-  assert.match(util, /allMessages/);
+  assert.doesNotMatch(util, /allMessages/);
   assert.match(util, /newMessage/);
-  assert.match(util, /back_to_messages/);
+  assert.doesNotMatch(util, /back_to_messages/);
+  assert.match(read('js/src/forum/utils/shellOverflowPolicy.js'), /allMessages/);
   assert.match(util, /composeDirect/);
   assert.match(util, /mergeHeaderOverflowItems/);
   assert.match(util, /SHELL_OVERFLOW_KEYS/);
