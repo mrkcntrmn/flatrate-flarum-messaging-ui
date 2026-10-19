@@ -114,3 +114,36 @@ PR #22 was not changed. Head remains `7a31f0e917c1d3939d0ff606883ab094be444e3b`.
 Local evidence, not committed: `/home/ilove/dev/_disposable/forum-live-ui-cleanup-001-r3/evidence/`.
 
 Follow-ups outside this work order: the disposable maintenance banner overlaps the mobile conversation header, and a generic full-site load alert can appear alongside an otherwise rendered conversation. Neither changed these overflow results.
+
+## R5 Pixel 5 physical acceptance
+
+**Work order:** FORUM-LIVE-UI-CLEANUP-001-R5
+**Date:** 2026-10-19
+**Merged:** PR #25 merge commit `336acce1c52329a86595204a5bd99c8ecbe91ecc`
+**Installed revision during the phone test:** `42df3062727922ffd5f0eae3890280a9d68da765`
+
+The R3 Samsung result remains unproven. Samsung-specific and Android 16 testing are not required for this overflow change. The physical browser was Pixel 5, Android 14, Chrome 155.0.8059.79.
+
+Portrait CSS viewport: 392 by 721, devicePixelRatio 2.75, no horizontal overflow. The first tap opened the overflow. General Live and Toyota Live showed New message, Room info, Disable sounds, and Enable notifications, without All messages or its inbox icon. Sounds toggled and were restored. Direct kept the recipient title and direct header class; its overflow was New message only. Back went to `/`, `/t/toyota`, and `/messages`.
+
+Landscape CSS viewport was 801 by 284. The overflow remained reachable and did not show All messages. Back was `display: none` because the width crossed the existing 768px rule. Portrait restored the 44px Back control. R5 did not treat that hidden control as a failure of the All messages removal. R6 addresses the missing route-aware exit below.
+
+PR #22 was not changed. Production was not deployed.
+
+`PHYSICAL_ANDROID_WEB_UI_ACCEPTANCE=PASS` on Pixel 5. `SAMSUNG_ANDROID16=NOT_TESTED`.
+
+## R6 Landscape conversation exit
+
+On the same Pixel 5 landscape viewport, 801 by 284:
+
+| Check | Result |
+| --- | --- |
+| Back in the DOM | yes |
+| Back computed display | `none` |
+| Responsible rule | `@media (min-width: 768px)` in `resources/less/forum.less` |
+| Directory | visible, 320px, links stay on `/messages/...` |
+| Site navigation | `display: none` |
+
+The directory is the wide-layout conversation list. It does not navigate to `/`, `/t/toyota`, or `/messages`. Browser Back is not treated as the in-app exit. The correction restores the existing Back button when the viewport is at least 768px wide and at most 500px tall. Desktop heights still hide Back. All messages stays out of the overflow.
+
+Pixel 5 retest: landscape 801 by 284 showed Back at 44 by 44. Physical taps went from General Live to `/`, Toyota Live to `/t/toyota`, and Direct to `/messages`. At 1280 by 800, Back stayed `display: none`. Portrait 392 by 721 kept the 44px Back control.

@@ -1218,6 +1218,17 @@
   }
 }
 
+// A phone in landscape is wider than 768px, so the rule above hides Back and
+// shows the directory. The directory only switches conversations. It does not
+// go to /, the brand board, or /messages, and the site nav stays hidden.
+// Restore the existing Back control while the viewport is still phone-short.
+// Desktop heights keep Back hidden.
+@media @tablet-up and (max-height: 500px) {
+  .MessagesConversationHeader-back {
+    display: inline-flex !important;
+  }
+}
+
 @media (min-width: 1280px) {
   .MessagesPage,
   .MessagesShell {
