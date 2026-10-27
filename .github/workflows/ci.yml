@@ -8,12 +8,20 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            lane: f1
+          - php: '8.4'
+            lane: f2
     steps:
       - uses: actions/checkout@v4
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
           coverage: none
           extensions: curl, dom, mbstring, openssl, pdo, tokenizer, xml, xmlwriter, zip
@@ -29,15 +37,26 @@ jobs:
 
       # Composer 2.10 blocks league/flysystem 1.x, which Flarum 1.8.19 requires.
       # Ignore only those advisory IDs so the existing 1.8.19 lock can install.
+      # Exception stays on the Flarum 1 lane only.
       - name: Allow Flarum 1.8.19 flysystem advisories
+        if: matrix.lane == 'f1'
         run: composer config --global --json policy.advisories.ignore-id '["PKSA-w9tt-7782-78jx","PKSA-pwh8-d4fr-nywn"]'
 
       - name: Install PHP dependencies
         run: composer update --no-interaction --prefer-dist
 
+      - name: Assert resolved Flarum core
+        run: |
+          if [ "${{ matrix.lane }}" = "f2" ]; then
+            composer show flarum/core | grep -E '^versions\s+:\s+\* v2\.0\.2$'
+            composer show league/flysystem | grep -E '^versions\s+:\s+\* 3\.'
+          else
+            composer show flarum/core | grep -E '^versions\s+:\s+\* v1\.8\.'
+          fi
+
       - name: PHP syntax check
         run: |
-          find src tests extend.php -type f -name '*.php' -print0 \
+          find src tests extend.php extend-f2.php -type f -name '*.php' -print0 \
             | xargs -0 -n1 php -l
 
       - name: PHPUnit
@@ -62,3 +81,18 @@ jobs:
             echo "Run \`cd js && npm ci && npm run build\`, commit js/dist, and retry."
             exit 1
           fi
+
+  flarum-f2-http:
+    name: Flarum 2.0.2 messaging-ui HTTP
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+          extensions: curl, dom, fileinfo, gd, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml, xmlwriter, zip
+      - name: Disposable Flarum 2 HTTP acceptance
+        run: bash scripts/ci-flarum-f2-http.sh
