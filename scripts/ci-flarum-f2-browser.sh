@@ -249,6 +249,33 @@ apply_f2_browser_compat() {
   local live_extend="${LIVE_ROOT}/extend-f2.php"
   local live_f2_less="${LIVE_ROOT}/resources/less/forum-f2.less"
   local dm_less="${DM_ROOT}/resources/less/extension.less"
+  local patch_root="${MSG_ROOT}/scripts/patches/live"
+
+  # Overlay R4 Live F2 patches (Avatar/Icon, chat-messages JSON, forum-f2 assets)
+  # when present so CI pins older than the qualified head still boot.
+  if [[ -d "${patch_root}" ]]; then
+    if [[ -f "${patch_root}/forum-f2.js" ]]; then
+      mkdir -p "${LIVE_ROOT}/js/dist"
+      cp -f "${patch_root}/forum-f2.js" "${LIVE_ROOT}/js/dist/forum-f2.js"
+      [[ -f "${patch_root}/forum.js" ]] && cp -f "${patch_root}/forum.js" "${LIVE_ROOT}/js/dist/forum.js"
+      echo "F2_COMPAT_LIVE_DIST_PATCH=1" | tee -a "${EVIDENCE_DIR}/browser.log"
+    fi
+    if [[ -f "${patch_root}/extend-f2.php" ]]; then
+      cp -f "${patch_root}/extend-f2.php" "${LIVE_ROOT}/extend-f2.php"
+    fi
+    if [[ -f "${patch_root}/forum-f2.less" ]]; then
+      mkdir -p "$(dirname "${live_f2_less}")"
+      cp -f "${patch_root}/forum-f2.less" "${live_f2_less}"
+    fi
+    if [[ -d "${patch_root}/src" ]]; then
+      mkdir -p "${LIVE_ROOT}/src"
+      cp -a "${patch_root}/src/." "${LIVE_ROOT}/src/"
+    fi
+    if [[ -d "${patch_root}/js/src" ]]; then
+      mkdir -p "${LIVE_ROOT}/js/src"
+      cp -a "${patch_root}/js/src/." "${LIVE_ROOT}/js/src/"
+    fi
+  fi
 
   if [[ -f "${live_extend}" ]]; then
     if grep -q "resources/less/forum.less" "${live_extend}"; then

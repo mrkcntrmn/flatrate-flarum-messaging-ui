@@ -9,9 +9,25 @@ export async function waitForApp(page) {
   });
 }
 
+export async function gotoStable(page, path = '/') {
+  for (let i = 0; i < 6; i++) {
+    try {
+      const resp = await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      if (resp && resp.status() >= 500) {
+        await page.waitForTimeout(800);
+        continue;
+      }
+      await waitForApp(page);
+      return;
+    } catch (_e) {
+      await page.waitForTimeout(800);
+    }
+  }
+  throw new Error(`gotoStable failed path=${path}`);
+}
+
 export async function loginAs(page, username, password) {
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-  await waitForApp(page);
+  await gotoStable(page, '/');
 
   const already = await page.evaluate((u) => {
     const user = window.app?.session?.user;
