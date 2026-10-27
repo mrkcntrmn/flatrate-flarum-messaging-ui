@@ -96,3 +96,72 @@ jobs:
           extensions: curl, dom, fileinfo, gd, mbstring, openssl, pdo, pdo_sqlite, tokenizer, xml, xmlwriter, zip
       - name: Disposable Flarum 2 HTTP acceptance
         run: bash scripts/ci-flarum-f2-http.sh
+
+  flarum-f2-messaging-browser:
+    name: Flarum 2.0.2 combined Messaging Chromium
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: disposable-local
+          MARIADB_DATABASE: flarum_messaging_browser_f2
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pinned Direct Messages provider
+        uses: actions/checkout@v4
+        with:
+          repository: mrkcntrmn/flatrate-flarum-private-messages-bridge
+          ref: ea9f7dadda8c0d305644282be78aa137fd570651
+          path: .pins/dm
+
+      - name: Checkout pinned Live Chat provider
+        uses: actions/checkout@v4
+        with:
+          repository: mrkcntrmn/flatrate-flarum-live-chat
+          ref: 5f16bb36151981112944e7c885034c2fa5f5e4d0
+          path: .pins/live
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+          extensions: curl, dom, fileinfo, gd, mbstring, openssl, pdo, pdo_mysql, tokenizer, xml, xmlwriter, zip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Combined Messaging Chromium acceptance
+        env:
+          COMBINED_DM_ROOT: ${{ github.workspace }}/.pins/dm
+          COMBINED_LIVE_ROOT: ${{ github.workspace }}/.pins/live
+          COMBINED_MESSAGING_UI_ROOT: ${{ github.workspace }}
+          FLARUM_DB_HOST: 127.0.0.1
+          FLARUM_DB_PORT: '3306'
+          FLARUM_DB_DATABASE: flarum_messaging_browser_f2
+          FLARUM_DB_USERNAME: root
+          FLARUM_DB_PASSWORD: disposable-local
+          BROWSER_EVIDENCE_DIR: ${{ github.workspace }}/evidence/forum-f2-messaging-browser
+          KEEP_SMOKE_ROOT: '0'
+        run: bash scripts/ci-flarum-f2-browser.sh
+
+      - name: Upload messaging browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forum-f2-messaging-browser-evidence
+          path: evidence/forum-f2-messaging-browser/
+          if-no-files-found: ignore

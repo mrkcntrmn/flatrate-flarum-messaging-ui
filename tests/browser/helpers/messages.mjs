@@ -1,0 +1,165 @@
+import { waitForApp } from './auth.mjs';
+
+export async function openMessages(page, path = '/messages') {
+  await page.goto(path, { waitUntil: 'domcontentloaded' });
+  await waitForApp(page);
+  await page.waitForSelector('.MessagesPage, .MessagesShell', { timeout: 60_000 });
+}
+
+export async function bubbleBodies(page) {
+  return page
+    .locator(
+      '.MessagesBubble-body, .MessageText, .chat-message .message-text, .ChatMessage-body, .ChatMessage .message, .MessagesLiveSurface .message'
+    )
+    .allTextContents();
+}
+
+export async function waitForBubbleText(page, text, timeout = 45_000) {
+  await page.waitForFunction(
+    (needle) => {
+      const nodes = Array.from(
+        document.querySelectorAll(
+          '.MessagesBubble-body, .MessageText, .chat-message .message-text, .ChatMessage-body, .ChatMessage .message, .MessagesLiveSurface .message, .ChatViewport .message'
+        )
+      );
+      return nodes.some((n) => (n.textContent || '').includes(needle));
+    },
+    text,
+    { timeout }
+  );
+}
+
+export async function sendDirectComposer(page, text) {
+  const input = page.locator(
+    '.MessagesComposer-input, .DirectComposer textarea, textarea.MessagesComposer-input, .MessagesDirectSurface textarea'
+  );
+  await input.first().waitFor({ state: 'visible', timeout: 45_000 });
+  await input.first().click();
+  await input.first().fill('');
+  await input.first().fill(text);
+  const send = page.locator(
+    '.MessagesComposer-send, .DirectComposer .Button--primary, form.MessagesComposer button[type="submit"]'
+  );
+  await send.first().click({ force: true });
+  await waitForBubbleText(page, text, 45_000);
+}
+
+export async function sendLiveComposer(page, text) {
+  const input = page.locator('#chat-input, .ChatInput textarea, .MessagesLiveSurface textarea');
+  await input.first().waitFor({ state: 'visible', timeout: 45_000 });
+  // `#notices` can sit above the Live composer and intercept clicks.
+  await input.first().click({ force: true });
+  await input.first().fill('');
+  await input.first().type(text, { delay: 8 });
+  // Live messageSend() no-ops unless writingPreview is armed via inputProcess.
+  const armed = await page.evaluate((body) => {
+    const chat = window.app?.chat;
+    if (!chat || typeof chat.getCurrentChat !== 'function' || typeof chat.getViewportState !== 'function') {
+      return { ok: false, reason: 'no_chat' };
+    }
+    const model = chat.getCurrentChat();
+    if (!model) return { ok: false, reason: 'no_current_chat' };
+    const vs = chat.getViewportState(model);
+    const ta = document.querySelector('#chat-input');
+    if (ta) {
+      ta.value = body;
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    vs.input.content(body);
+    vs.input.messageLength = body.trim().length;
+    if (!vs.input.writingPreview) {
+      vs.input.writingPreview = true;
+      const preview = app.store.createRecord('chatmessages');
+      preview.pushData({
+        id: 0,
+        attributes: { message: body, created_at: 0 },
+        relationships: { user: app.session.user, chat: model },
+      });
+      Object.assign(preview, { isEditing: true, isNeedToFlash: true, content: body });
+      vs.input.previewModel = preview;
+    } else if (vs.input.previewModel) {
+      vs.input.previewModel.content = body;
+    }
+    vs.messageSend();
+    return { ok: true };
+  }, text);
+  if (!armed.ok) {
+    const send = page.locator('.ChatInput-send, .ChatInput .Button--primary');
+    if (await send.first().isVisible().catch(() => false)) {
+      await send.first().click({ force: true });
+    } else {
+      await input.first().press('Enter');
+    }
+  }
+  await waitForBubbleText(page, text, 60_000);
+}
+
+export async function guestHtmlLeaks(page, sentinels) {
+  const html = await page.content();
+  const leaked = sentinels.filter((s) => html.includes(s));
+  const stateLeak = await page.evaluate((needles) => {
+    const safe = (value) => {
+      const seen = new WeakSet();
+      try {
+        return JSON.stringify(value, (_k, v) => {
+          if (typeof v === 'object' && v !== null) {
+            if (seen.has(v)) return undefined;
+            seen.add(v);
+          }
+          if (typeof v === 'function') return undefined;
+          return v;
+        });
+      } catch (_e) {
+        return '';
+      }
+    };
+    const dump = [
+      safe(window.app?.data),
+      safe(window.app?.cache),
+      document.body?.innerText || '',
+    ].join('\n');
+    return needles.filter((n) => dump.includes(n));
+  }, sentinels);
+  return { htmlLeaks: leaked, stateLeaks: stateLeak };
+}
+
+export async function directoryTitles(page) {
+  // Wait for either Direct or Live rows; do not click ambiguous "Live" buttons
+  // (that can match header chrome and navigate away from /messages).
+  await page
+    .waitForSelector('.ConversationRow-title, .MessagesDirectory-title, .ChatList-item-title', {
+      timeout: 30_000,
+    })
+    .catch(() => {});
+  const filterLive = page.locator(
+    '.MessagesFilter [data-filter="live"], .MessagesDirectory-filter [data-filter="live"], button.MessagesFilter-live'
+  );
+  if (await filterLive.first().isVisible().catch(() => false)) {
+    await filterLive.first().click();
+    await page.waitForTimeout(400);
+  }
+  return page.locator('.ConversationRow-title, .MessagesDirectory-title, .ChatList-item-title').allTextContents();
+}
+
+export async function mobileShellMetrics(page) {
+  return page.evaluate(() => {
+    const shell = document.querySelector('.MessagesPage, .MessagesShell');
+    if (!shell) return { ok: false, reason: 'missing_shell' };
+    const style = getComputedStyle(document.documentElement);
+    const bodyOverflowY = getComputedStyle(document.body).overflowY;
+    const docScroll = document.documentElement.scrollHeight > window.innerHeight + 2;
+    const viewport = shell.querySelector('.MessagesMessageViewport, .DirectMessageViewport, .ChatViewport, .MessagesPage-conversationBody');
+    const composer = shell.querySelector('.MessagesComposer, .ChatInput, .DirectComposer');
+    return {
+      ok: true,
+      bodyOverflowY,
+      docScroll,
+      hasViewport: !!viewport,
+      hasComposer: !!composer,
+      shellHeight: shell.getBoundingClientRect().height,
+      innerHeight: window.innerHeight,
+      dpr: window.devicePixelRatio,
+      cssVarsHint: style.getPropertyValue('--header-height') || null,
+    };
+  });
+}
