@@ -67,9 +67,21 @@ export async function sendDirectComposer(page, text) {
     '.MessagesComposer-input, .DirectComposer textarea, textarea.MessagesComposer-input, .MessagesDirectSurface textarea'
   );
   await input.first().waitFor({ state: 'visible', timeout: 45_000 });
-  await input.first().click();
-  await input.first().fill('');
-  await input.first().fill(text);
+  // Mithril binds value from a Stream; Playwright fill() fights the controlled
+  // input and can hang until the test timeout. Drive input events instead.
+  await input.first().click({ force: true });
+  await page.evaluate((body) => {
+    const ta = document.querySelector(
+      '.MessagesDirectSurface textarea.MessagesComposer-input, .DirectComposer textarea, textarea.MessagesComposer-input'
+    );
+    if (!ta) throw new Error('no_direct_composer');
+    const proto = window.HTMLTextAreaElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (desc && typeof desc.set === 'function') desc.set.call(ta, body);
+    else ta.value = body;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    ta.dispatchEvent(new Event('change', { bubbles: true }));
+  }, text);
   const send = page.locator(
     '.MessagesComposer-send, .DirectComposer .Button--primary, form.MessagesComposer button[type="submit"]'
   );
