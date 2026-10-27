@@ -121,7 +121,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: mrkcntrmn/flatrate-flarum-private-messages-bridge
-          ref: 0db78f956754f8d0e6e648b9e281b28ef001f7c1
+          ref: 0cba7c266610b94a2a3e428e32a2c0f7cfcc476b
           path: .pins/dm
 
       - name: Checkout pinned Live Chat provider
