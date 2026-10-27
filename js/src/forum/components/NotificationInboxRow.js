@@ -1,6 +1,6 @@
 import app from 'flarum/forum/app';
 import Link from 'flarum/common/components/Link';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
 import humanTime from 'flarum/common/helpers/humanTime';
 import { rowActions } from '../notifications/rowActions.js';
 import { markForumNotificationRead } from '../notifications/markForumNotificationRead.js';
@@ -41,7 +41,9 @@ export default class NotificationInboxRow {
       <article className={'NotificationInboxRow' + (row.unreadCount > 0 ? ' is-unread' : '')}>
         {row.actor ? (
           <Link className="NotificationInboxRow-actor" href={profile} aria-label={row.actor.displayName || row.actor.username}>
-            {storedUser(row.actor) ? avatar(storedUser(row.actor)) : (
+            {storedUser(row.actor) ? (
+              <Avatar user={storedUser(row.actor)} />
+            ) : (
               <span className="Avatar NotificationInboxRow-fallback" aria-hidden="true">
                 {(row.actor.displayName || row.actor.username || '?').slice(0, 1)}
               </span>

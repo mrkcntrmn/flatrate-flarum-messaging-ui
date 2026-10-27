@@ -1,5 +1,5 @@
 import Component from 'flarum/common/Component';
-import avatar from 'flarum/common/helpers/avatar';
+import Avatar from 'flarum/common/components/Avatar';
 import humanTime from 'flarum/common/helpers/humanTime';
 
 /**
@@ -128,7 +128,7 @@ export default class MessagesDiscoveryResults extends Component {
                       }}
                     >
                       <span className="MessagesDiscovery-personAvatar" aria-hidden="true">
-                        {person.user ? avatar(person.user, { alt: '' }) : <span className="Avatar">?</span>}
+                        {person.user ? <Avatar user={person.user} alt="" /> : <span className="Avatar">?</span>}
                       </span>
                       <span className="MessagesDiscovery-personText">
                         <span className="MessagesDiscovery-personName">{person.displayName}</span>
