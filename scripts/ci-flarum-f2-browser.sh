@@ -297,6 +297,16 @@ header = """\
 @screen-tablet-max: 991px;
 @screen-desktop: 992px;
 
+.box-shadow(@string) {
+  box-shadow: @string;
+}
+.Avatar--size(@size) {
+  width: @size;
+  height: @size;
+  font-size: (@size / 2);
+  line-height: @size;
+}
+
 """
 p.write_text(header + t)
 print("F2_COMPAT_DM_LESS=theme_var_stubs")
