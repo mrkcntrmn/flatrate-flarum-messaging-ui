@@ -177,9 +177,11 @@ test('composer.json does not require live-chat or the DM bridge', () => {
   const composer = JSON.parse(readFileSync(join(ROOT, 'composer.json'), 'utf8'));
   assert.equal(composer.name, 'flatrate/flarum-messaging-ui');
   assert.deepEqual(Object.keys(composer.require).sort(), ['flarum/core', 'php']);
-  assert.equal(composer.require['flarum/core'], '^1.8.19');
-  assert.equal(composer.require.php, '^8.1');
+  assert.equal(composer.require['flarum/core'], '^1.8.19 || ^2.0.2');
+  assert.match(composer.require.php, /^\^8\.1(\s*\|\|\s*\^8\.3)?$/);
   assert.equal(composer.extra['flarum-extension'].title, 'Messages');
   assert.equal(composer.extra['flarum-extension'].icon.name, 'fas fa-paper-plane');
   assert.equal(composer.extra['flarum-extension'].category, 'feature');
+  assert.equal(composer.extra['branch-alias']['dev-main'], '1.x-dev');
+  assert.equal(composer.extra['branch-alias']['dev-feat/forum-f2-messaging-ui-001'], '2.0.x-dev');
 });
