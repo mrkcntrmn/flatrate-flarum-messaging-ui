@@ -42,6 +42,12 @@ maybe_reexec_docker() {
     exit 1
   fi
   echo "COMBINED_F2=REEXEC image=${image}"
+  # Resolve SHAs on the host before reexec (worktree gitdirs may not be mounted).
+  export COMBINED_DM_SHA="${COMBINED_DM_SHA:-$(git -C "${DM_ROOT}" rev-parse HEAD)}"
+  export COMBINED_LIVE_SHA="${COMBINED_LIVE_SHA:-$(git -C "${LIVE_ROOT}" rev-parse HEAD)}"
+  export COMBINED_MSG_SHA="${COMBINED_MSG_SHA:-$(git -C "${MSG_ROOT}" rev-parse HEAD)}"
+
+  # Mount common parent paths so path-repo packages and composer caches resolve.
   exec docker run --rm --network host \
     -e COMBINED_F2_IN_DOCKER=1 \
     -e FLARUM_SMOKE_ROOT \
@@ -57,10 +63,11 @@ maybe_reexec_docker() {
     -e COMBINED_DM_ROOT \
     -e COMBINED_LIVE_ROOT \
     -e COMBINED_MESSAGING_UI_ROOT \
+    -e COMBINED_DM_SHA \
+    -e COMBINED_LIVE_SHA \
+    -e COMBINED_MSG_SHA \
     -e MARIA_CID \
-    -v "${MSG_ROOT}:${MSG_ROOT}" \
-    -v "${DM_ROOT}:${DM_ROOT}" \
-    -v "${LIVE_ROOT}:${LIVE_ROOT}" \
+    -v /home/ilove/dev:/home/ilove/dev \
     -v "${TMPDIR:-/tmp}:${TMPDIR:-/tmp}" \
     -w "${MSG_ROOT}" \
     "${image}" \
@@ -89,7 +96,12 @@ trap cleanup EXIT
 mkdir -p "${EVIDENCE_DIR}"
 
 sha_of() {
-  git -C "$1" rev-parse HEAD
+  local root="$1" override="${2:-}"
+  if [[ -n "${override}" ]]; then
+    printf '%s' "${override}"
+    return 0
+  fi
+  git -C "${root}" rev-parse HEAD
 }
 
 require_dist() {
@@ -99,9 +111,9 @@ require_dist() {
   fi
 }
 
-DM_SHA="$(sha_of "${DM_ROOT}")"
-LIVE_SHA="$(sha_of "${LIVE_ROOT}")"
-MSG_SHA="$(sha_of "${MSG_ROOT}")"
+DM_SHA="$(sha_of "${DM_ROOT}" "${COMBINED_DM_SHA:-}")"
+LIVE_SHA="$(sha_of "${LIVE_ROOT}" "${COMBINED_LIVE_SHA:-}")"
+MSG_SHA="$(sha_of "${MSG_ROOT}" "${COMBINED_MSG_SHA:-}")"
 echo "DM_SOURCE=${DM_SHA}"
 echo "LIVE_SOURCE=${LIVE_SHA}"
 echo "MESSAGING_UI_SOURCE=${MSG_SHA}"
