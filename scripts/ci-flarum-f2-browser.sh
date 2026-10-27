@@ -529,19 +529,27 @@ else
   php flarum install --file "${SMOKE_ROOT}/app/install.json"
 fi
 rm -f "${SMOKE_ROOT}/app/install.json"
+ensure_ext() {
+  local id="$1"
+  if host_php_ok; then
+    php flarum extension:enable "${id}" || true
+  else
+    php_docker "${SMOKE_ROOT}/app" flarum extension:enable "${id}" || true
+  fi
+}
 if host_php_ok; then
-  php flarum migrate >/dev/null
-  php flarum extension:enable flatrate-messaging-ui >/dev/null
-  php flarum extension:enable flatrate-private-messages-bridge >/dev/null
-  php flarum extension:enable flatrate-live-chat >/dev/null
-  php flarum assets:publish >/dev/null
+  php flarum migrate
+  ensure_ext flatrate-messaging-ui
+  ensure_ext flatrate-private-messages-bridge
+  ensure_ext flatrate-live-chat
+  php flarum assets:publish
   php flarum cache:clear >/dev/null 2>&1 || true
 else
-  php_docker "${SMOKE_ROOT}/app" flarum migrate >/dev/null
-  php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-messaging-ui >/dev/null
-  php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-private-messages-bridge >/dev/null
-  php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-live-chat >/dev/null
-  php_docker "${SMOKE_ROOT}/app" flarum assets:publish >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum migrate
+  ensure_ext flatrate-messaging-ui
+  ensure_ext flatrate-private-messages-bridge
+  ensure_ext flatrate-live-chat
+  php_docker "${SMOKE_ROOT}/app" flarum assets:publish
   php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
 # Confirm install IDs — wrong IDs silently omit the Messages shell from forum.js.
