@@ -506,6 +506,13 @@ else
   php flarum install --file "${SMOKE_ROOT}/app/install.json"
 fi
 rm -f "${SMOKE_ROOT}/app/install.json"
+if host_php_ok; then
+  php flarum migrate >/dev/null
+  php flarum assets:publish >/dev/null
+else
+  php_docker "${SMOKE_ROOT}/app" flarum migrate >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum assets:publish >/dev/null
+fi
 RESULT_COMBINED_F2_BOOT=PASS
 pass COMBINED_F2_BOOT
 
@@ -551,8 +558,8 @@ require __DIR__ . '/index.php';
 PHP
 
 start_flarum_server() {
-  # Prefer fewer workers in CI: multi-worker cold compiles race on homepage.
-  export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-2}"
+  # Single worker: multi-worker PHP built-in races produce sustained empty 500s.
+  export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-1}"
   if host_php_ok; then
     (
       cd "${SMOKE_ROOT}/app/public"
@@ -601,15 +608,18 @@ start_flarum_server
 
 ready=0
 api_last=000
+api_body="${EVIDENCE_DIR}/api-boot.body"
 for _ in $(seq 1 90); do
-  api_last="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "${BASE}/api" || true)"
+  api_last="$(curl -s -o "${api_body}" -w '%{http_code}' --max-time 5 "${BASE}/api" || true)"
   if [[ "${api_last}" == "200" ]]; then ready=1; break; fi
   sleep 0.25
 done
 [[ "${ready}" == "1" ]] || {
   echo "API_NOT_READY last=${api_last}" >&2
+  echo "API_BODY_HEAD=$(head -c 800 "${api_body}" 2>/dev/null || true)" >&2
   cat "${SMOKE_ROOT}/http.log" >&2 || true
-  tail -80 "${SMOKE_ROOT}/app/storage/logs/"*.log 2>/dev/null >&2 || true
+  # shellcheck disable=SC2086
+  tail -120 ${SMOKE_ROOT}/app/storage/logs/*.log 2>/dev/null >&2 || true
   fail COMBINED_F2_BOOT "server_not_ready"
 }
 

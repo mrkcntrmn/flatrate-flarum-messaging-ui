@@ -156,7 +156,7 @@ jobs:
           FLARUM_DB_PASSWORD: disposable-local
           BROWSER_EVIDENCE_DIR: ${{ github.workspace }}/evidence/forum-f2-messaging-browser
           KEEP_SMOKE_ROOT: '0'
-          PHP_CLI_SERVER_WORKERS: '2'
+          PHP_CLI_SERVER_WORKERS: '1'
         run: bash scripts/ci-flarum-f2-browser.sh
 
       - name: Upload messaging browser evidence
