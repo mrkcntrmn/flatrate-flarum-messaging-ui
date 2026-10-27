@@ -588,10 +588,7 @@ start_flarum_server() {
   fi
 }
 
-start_flarum_server
-
-# Disposable fixture keeps debug=true: debug=false + PHP multi-worker cold asset
-# compile races produce empty HTTP 500 homepage responses in CI.
+# Publish assets before the PHP server starts so workers do not race cold compiles.
 if host_php_ok; then
   php "${SMOKE_ROOT}/app/flarum" assets:publish >/dev/null 2>&1 || true
   php "${SMOKE_ROOT}/app/flarum" cache:clear >/dev/null 2>&1 || true
@@ -600,13 +597,21 @@ else
   php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
 
+start_flarum_server
+
 ready=0
-for _ in $(seq 1 60); do
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "${BASE}/api" || true)"
-  if [[ "${code}" == "200" ]]; then ready=1; break; fi
+api_last=000
+for _ in $(seq 1 90); do
+  api_last="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "${BASE}/api" || true)"
+  if [[ "${api_last}" == "200" ]]; then ready=1; break; fi
   sleep 0.25
 done
-[[ "${ready}" == "1" ]] || { cat "${SMOKE_ROOT}/http.log" >&2 || true; fail COMBINED_F2_BOOT "server_not_ready"; }
+[[ "${ready}" == "1" ]] || {
+  echo "API_NOT_READY last=${api_last}" >&2
+  cat "${SMOKE_ROOT}/http.log" >&2 || true
+  tail -80 "${SMOKE_ROOT}/app/storage/logs/"*.log 2>/dev/null >&2 || true
+  fail COMBINED_F2_BOOT "server_not_ready"
+}
 
 # Homepage must return 200 before Playwright (PHP built-in can flap 5xx under load).
 home_ready=0
