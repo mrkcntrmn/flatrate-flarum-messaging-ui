@@ -536,14 +536,18 @@ CROSS="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE
 if [[ "${CROSS}" == "200" ]]; then fail CROSS_DOMAIN_ISOLATION "direct_id_as_live_room"; fi
 pass CROSS_DOMAIN_ISOLATION "live_lookup_status=${CROSS}"
 
-# Disable-one-provider fallback
+# Disable-one-provider fallback — disabled APIs must not stay open (200) or crash (5xx).
 php flarum extension:disable flatrate-private-messages-bridge >/dev/null
+php flarum cache:clear >/dev/null 2>&1 || true
+sleep 1
 DISABLED_DM="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/neoncube-private-messages/conversations")"
-if [[ "${DISABLED_DM}" == "200" ]]; then fail DISABLE_FALLBACK "dm_still_open"; fi
+if [[ "${DISABLED_DM}" == "200" || "${DISABLED_DM}" -ge 500 ]]; then fail DISABLE_FALLBACK "dm_status=${DISABLED_DM}"; fi
 php flarum extension:enable flatrate-private-messages-bridge >/dev/null
 php flarum extension:disable flatrate-live-chat >/dev/null
+php flarum cache:clear >/dev/null 2>&1 || true
+sleep 1
 DISABLED_LIVE="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/flatrate-live-chat/live-chats")"
-if [[ "${DISABLED_LIVE}" == "200" ]]; then fail DISABLE_FALLBACK "live_still_open"; fi
+if [[ "${DISABLED_LIVE}" == "200" || "${DISABLED_LIVE}" -ge 500 ]]; then fail DISABLE_FALLBACK "live_status=${DISABLED_LIVE}"; fi
 pass DISABLE_FALLBACK "dm=${DISABLED_DM} live=${DISABLED_LIVE}"
 
 # Receipt keys (Lane A scope)

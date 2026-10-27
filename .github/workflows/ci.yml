@@ -128,7 +128,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: mrkcntrmn/flatrate-flarum-live-chat
-          ref: 0aaf9aab40248e8ff502bfbede48a95e9c2aa2e9
+          ref: b048f30a6bdef3e8bb1d29ded9ebd1975688603c
           path: .pins/live
 
       - uses: shivammathur/setup-php@v2

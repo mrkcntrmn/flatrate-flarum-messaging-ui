@@ -10,20 +10,47 @@ export async function waitForApp(page) {
 }
 
 export async function gotoStable(page, path = '/') {
+  const attempts = [];
   for (let i = 0; i < 6; i++) {
     try {
       const resp = await page.goto(path, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-      if (resp && resp.status() >= 500) {
+      const status = resp ? resp.status() : null;
+      if (status !== null && status >= 500) {
+        const body = await page.content().catch(() => '');
+        attempts.push({ i, status, reason: 'http_5xx', bodyHead: body.slice(0, 240) });
         await page.waitForTimeout(800);
         continue;
       }
-      await waitForApp(page);
-      return;
-    } catch (_e) {
+      try {
+        await waitForApp(page);
+        return;
+      } catch (appErr) {
+        const title = await page.title().catch(() => '');
+        const href = page.url();
+        const consoleHint = await page
+          .evaluate(() => (window.__flarumFailedBoot && String(window.__flarumFailedBoot)) || '')
+          .catch(() => '');
+        attempts.push({
+          i,
+          status,
+          reason: 'app_not_ready',
+          title,
+          href,
+          consoleHint: consoleHint.slice(0, 200),
+          error: String(appErr && appErr.message ? appErr.message : appErr).slice(0, 200),
+        });
+        await page.waitForTimeout(800);
+      }
+    } catch (navErr) {
+      attempts.push({
+        i,
+        reason: 'navigation',
+        error: String(navErr && navErr.message ? navErr.message : navErr).slice(0, 240),
+      });
       await page.waitForTimeout(800);
     }
   }
-  throw new Error(`gotoStable failed path=${path}`);
+  throw new Error(`gotoStable failed path=${path} attempts=${JSON.stringify(attempts)}`);
 }
 
 export async function loginAs(page, username, password) {

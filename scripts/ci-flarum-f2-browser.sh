@@ -249,34 +249,9 @@ apply_f2_browser_compat() {
   local live_extend="${LIVE_ROOT}/extend-f2.php"
   local live_f2_less="${LIVE_ROOT}/resources/less/forum-f2.less"
   local dm_less="${DM_ROOT}/resources/less/extension.less"
-  local patch_root="${MSG_ROOT}/scripts/patches/live"
 
-  # Overlay R4 Live F2 patches (Avatar/Icon, chat-messages JSON, forum-f2 assets)
-  # when present so CI pins older than the qualified head still boot.
-  if [[ -d "${patch_root}" ]]; then
-    if [[ -f "${patch_root}/forum-f2.js" ]]; then
-      mkdir -p "${LIVE_ROOT}/js/dist"
-      cp -f "${patch_root}/forum-f2.js" "${LIVE_ROOT}/js/dist/forum-f2.js"
-      [[ -f "${patch_root}/forum.js" ]] && cp -f "${patch_root}/forum.js" "${LIVE_ROOT}/js/dist/forum.js"
-      echo "F2_COMPAT_LIVE_DIST_PATCH=1" | tee -a "${EVIDENCE_DIR}/browser.log"
-    fi
-    if [[ -f "${patch_root}/extend-f2.php" ]]; then
-      cp -f "${patch_root}/extend-f2.php" "${LIVE_ROOT}/extend-f2.php"
-    fi
-    if [[ -f "${patch_root}/forum-f2.less" ]]; then
-      mkdir -p "$(dirname "${live_f2_less}")"
-      cp -f "${patch_root}/forum-f2.less" "${live_f2_less}"
-    fi
-    if [[ -d "${patch_root}/src" ]]; then
-      mkdir -p "${LIVE_ROOT}/src"
-      cp -a "${patch_root}/src/." "${LIVE_ROOT}/src/"
-    fi
-    if [[ -d "${patch_root}/js/src" ]]; then
-      mkdir -p "${LIVE_ROOT}/js/src"
-      cp -a "${patch_root}/js/src/." "${LIVE_ROOT}/js/src/"
-    fi
-  fi
-
+  # Do not overlay Live source/dist patches. Combined Chromium must exercise the
+  # exact pinned Live revision checked out by CI (release candidate authenticity).
   if [[ -f "${live_extend}" ]]; then
     if grep -q "resources/less/forum.less" "${live_extend}"; then
       sed -i 's#resources/less/forum\.less#resources/less/forum-f2.less#g' "${live_extend}"
@@ -284,16 +259,9 @@ apply_f2_browser_compat() {
     fi
   fi
   if [[ ! -f "${live_f2_less}" ]]; then
-    mkdir -p "$(dirname "${live_f2_less}")"
-    cat > "${live_f2_less}" <<'LESS'
-// Flarum 2 Messaging UI surface styles only.
-// Legacy neonchat ChatList/ChatModal/ChatViewport LESS depends on F1 mixins
-// (.transition, .fa, @phone) that F2 no longer injects into extension compiles.
-@import "forum/MessagesLiveSurface.less";
-@import "forum/MessagesBubbleStyle.less";
-LESS
-    echo "F2_COMPAT_LIVE_WROTE_forum-f2.less=1" | tee -a "${EVIDENCE_DIR}/browser.log"
+    fail LIVE_F2_LESS "pinned Live revision missing resources/less/forum-f2.less (refuses silent substitute)"
   fi
+  echo "F2_COMPAT_LIVE_PIN_ASSETS=exact" | tee -a "${EVIDENCE_DIR}/browser.log"
 
   if [[ -f "${dm_less}" ]] && grep -qE '@control-bg|@muted-color|@text-color|@body-bg|@online-user-circle-color' "${dm_less}"; then
     DM_LESS="${dm_less}" python3 - <<'PY'
@@ -500,7 +468,7 @@ pass COMBINED_COMPOSER "core=${INSTALLED_CORE}"
 
 cat > "${SMOKE_ROOT}/app/install.json" <<EOF
 {
-  "debug": true,
+  "debug": false,
   "baseUrl": "${BASE}",
   "databaseConfiguration": {
     "driver": "mysql",
@@ -618,12 +586,32 @@ start_flarum_server() {
 
 start_flarum_server
 
+# Force stable asset mode even if install.json debug leaked into config.php.
+if host_php_ok; then
+  php -r '$p=$argv[1]; $c=include $p; $c["debug"]=false; file_put_contents($p, "<?php return ".var_export($c, true).";\n");' \
+    "${SMOKE_ROOT}/app/config.php"
+  php "${SMOKE_ROOT}/app/flarum" cache:clear >/dev/null 2>&1 || true
+else
+  php_docker "${SMOKE_ROOT}/app" -r '$p="config.php"; $c=include $p; $c["debug"]=false; file_put_contents($p, "<?php return ".var_export($c, true).";\n");'
+  php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
+fi
+
 ready=0
 for _ in $(seq 1 60); do
   if curl -s -o /dev/null "${BASE}/api"; then ready=1; break; fi
   sleep 0.25
 done
 [[ "${ready}" == "1" ]] || { cat "${SMOKE_ROOT}/http.log" >&2 || true; fail COMBINED_F2_BOOT "server_not_ready"; }
+
+# Homepage must return 200 before Playwright (PHP built-in can flap 5xx under load).
+home_ready=0
+for _ in $(seq 1 40); do
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${BASE}/" || true)"
+  if [[ "${code}" == "200" ]]; then home_ready=1; break; fi
+  sleep 0.5
+done
+[[ "${home_ready}" == "1" ]] || { echo "HOMEPAGE_NOT_READY last=${code:-none}" >&2; tail -80 "${SMOKE_ROOT}/http.log" >&2 || true; fail COMBINED_F2_BOOT "homepage_not_200"; }
+echo "HOMEPAGE_READY=PASS"
 
 token_for() {
   local user="$1" pass="$2" out code token
@@ -830,31 +818,50 @@ else
 fi
 
 # Disable-provider fallback (HTTP + shell still loads) — after browser suite so providers were available for tests.
+# Disabled APIs must not stay open (200) and must not crash (5xx). Prefer 401/403/404.
+disable_status_ok() {
+  local code="$1"
+  [[ "${code}" =~ ^[0-9]+$ ]] || return 1
+  [[ "${code}" -ge 500 ]] && return 1
+  [[ "${code}" == "200" ]] && return 1
+  return 0
+}
+
 cd "${SMOKE_ROOT}/app"
 if host_php_ok; then
   php flarum extension:disable flatrate-private-messages-bridge >/dev/null
+  php flarum cache:clear >/dev/null 2>&1 || true
 else
   php_docker "${SMOKE_ROOT}/app" flarum extension:disable flatrate-private-messages-bridge >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
-DISABLED_DM="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/neoncube-private-messages/conversations")"
-MEMBER_SHELL="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/messages")"
+sleep 1
+DISABLED_DM="$(curl -s -o "${EVIDENCE_DIR}/disable-dm.body" -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/neoncube-private-messages/conversations" || echo 000)"
+MEMBER_SHELL="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/messages" || echo 000)"
 if host_php_ok; then
   php flarum extension:enable flatrate-private-messages-bridge >/dev/null
   php flarum extension:disable flatrate-live-chat >/dev/null
+  php flarum cache:clear >/dev/null 2>&1 || true
 else
   php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-private-messages-bridge >/dev/null
   php_docker "${SMOKE_ROOT}/app" flarum extension:disable flatrate-live-chat >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
-DISABLED_LIVE="$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/flatrate-live-chat/live-chats")"
+sleep 1
+DISABLED_LIVE="$(curl -s -o "${EVIDENCE_DIR}/disable-live.body" -w '%{http_code}' -H "Authorization: Token ${ALICE_TOKEN}" "${BASE}/api/flatrate-live-chat/live-chats" || echo 000)"
 if host_php_ok; then
   php flarum extension:enable flatrate-live-chat >/dev/null
+  php flarum cache:clear >/dev/null 2>&1 || true
 else
   php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-live-chat >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
 
-if [[ "${DISABLED_DM}" == "200" || "${DISABLED_LIVE}" == "200" || "${MEMBER_SHELL}" == "500" ]]; then
+if ! disable_status_ok "${DISABLED_DM}" || ! disable_status_ok "${DISABLED_LIVE}" || [[ "${MEMBER_SHELL}" == "500" || "${MEMBER_SHELL}" == "000" ]]; then
   RESULT_DISABLE_FALLBACK=FAIL
   echo "DISABLE_FALLBACK=FAIL dm=${DISABLED_DM} live=${DISABLED_LIVE} shell=${MEMBER_SHELL}" >&2
+  echo "DISABLE_DM_BODY=$(head -c 300 "${EVIDENCE_DIR}/disable-dm.body" 2>/dev/null || true)" >&2
+  echo "DISABLE_LIVE_BODY=$(head -c 300 "${EVIDENCE_DIR}/disable-live.body" 2>/dev/null || true)" >&2
 else
   RESULT_DISABLE_FALLBACK=PASS
   pass DISABLE_FALLBACK "dm=${DISABLED_DM} live=${DISABLED_LIVE} shell=${MEMBER_SHELL}"
