@@ -562,6 +562,23 @@ echo "EXTENSIONS_ENABLED=${ENABLED}"
 echo "${ENABLED}" | grep -q 'flatrate-messaging-ui' || fail COMBINED_F2_BOOT "messaging_ui_not_enabled"
 echo "${ENABLED}" | grep -q 'flatrate-live-chat' || fail COMBINED_F2_BOOT "live_not_enabled"
 echo "${ENABLED}" | grep -q 'flatrate-private-messages-bridge' || fail COMBINED_F2_BOOT "dm_not_enabled"
+
+# Wipe stale compiled forum assets so the next request/publish includes enabled
+# extension JS (otherwise Messages routes + providers never register in Chromium).
+rm -f "${SMOKE_ROOT}/app/public/assets/forum.js" \
+  "${SMOKE_ROOT}/app/public/assets/forum.js.map" \
+  "${SMOKE_ROOT}/app/public/assets/forum.css" \
+  "${SMOKE_ROOT}/app/public/assets/forum-en.js" \
+  "${SMOKE_ROOT}/app/public/assets/admin.js" \
+  "${SMOKE_ROOT}/app/public/assets/admin.css" || true
+rm -rf "${SMOKE_ROOT}/app/storage/cache"/* || true
+if host_php_ok; then
+  php flarum assets:publish
+  php flarum cache:clear >/dev/null 2>&1 || true
+else
+  php_docker "${SMOKE_ROOT}/app" flarum assets:publish
+  php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
+fi
 RESULT_COMBINED_F2_BOOT=PASS
 pass COMBINED_F2_BOOT
 
@@ -685,10 +702,26 @@ if [[ "${home_ready}" != "1" ]]; then
   echo "HOMEPAGE_BODY_HEAD=$(head -c 500 "${home_body}" 2>/dev/null || true)" >&2
   tail -80 "${SMOKE_ROOT}/http.log" >&2 || true
   ls -lt "${SMOKE_ROOT}/app/storage/logs" >&2 || true
-  tail -80 "${SMOKE_ROOT}/app/storage/logs/"*.log 2>/dev/null >&2 || true
+  # shellcheck disable=SC2086
+  tail -80 ${SMOKE_ROOT}/app/storage/logs/*.log 2>/dev/null >&2 || true
   fail COMBINED_F2_BOOT "homepage_not_200"
 fi
 echo "HOMEPAGE_READY=PASS"
+
+# Prove extension frontend JS landed in the served forum bundle.
+FORUM_JS="${SMOKE_ROOT}/app/public/assets/forum.js"
+if [[ -f "${FORUM_JS}" ]]; then
+  for needle in flatrate-messaging-ui flatrate-live-chat flatrate-private-messages; do
+    if ! grep -q "${needle}" "${FORUM_JS}"; then
+      echo "FORUM_JS_MISSING_NEEDLE=${needle} size=$(wc -c <"${FORUM_JS}")" >&2
+      fail COMBINED_F2_BOOT "forum_js_missing_${needle}"
+    fi
+  done
+  echo "FORUM_JS_EXTENSIONS=PASS size=$(wc -c <"${FORUM_JS}")"
+else
+  echo "FORUM_JS_COMPILED=absent (debug asset mode)"
+  echo "HOMEPAGE_HAS_MESSAGING=$(grep -c 'flatrate-messaging-ui\|/messages' "${home_body}" || true)"
+fi
 
 token_for() {
   local user="$1" pass="$2" out code token
