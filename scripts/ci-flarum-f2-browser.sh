@@ -218,6 +218,9 @@ app_composer() {
 
 mkdir -p "${EVIDENCE_DIR}" "${SMOKE_ROOT}/keys" "${SMOKE_ROOT}/centrifugo" "${SMOKE_ROOT}/edge"
 : > "${EVIDENCE_DIR}/browser.log"
+# Drop committed/local receipts so EXIT emissions cannot fake PASS from prior runs.
+rm -f "${EVIDENCE_DIR}/receipts.json" "${EVIDENCE_DIR}/homepage-boot.body"
+printf '%s\n' '{}' > "${EVIDENCE_DIR}/receipts.json"
 
 sha_of() {
   local root="$1" override="${2:-}"
@@ -468,7 +471,7 @@ pass COMBINED_COMPOSER "core=${INSTALLED_CORE}"
 
 cat > "${SMOKE_ROOT}/app/install.json" <<EOF
 {
-  "debug": false,
+  "debug": true,
   "baseUrl": "${BASE}",
   "databaseConfiguration": {
     "driver": "mysql",
@@ -548,7 +551,8 @@ require __DIR__ . '/index.php';
 PHP
 
 start_flarum_server() {
-  export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
+  # Prefer fewer workers in CI: multi-worker cold compiles race on homepage.
+  export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-2}"
   if host_php_ok; then
     (
       cd "${SMOKE_ROOT}/app/public"
@@ -586,31 +590,40 @@ start_flarum_server() {
 
 start_flarum_server
 
-# Force stable asset mode even if install.json debug leaked into config.php.
+# Disposable fixture keeps debug=true: debug=false + PHP multi-worker cold asset
+# compile races produce empty HTTP 500 homepage responses in CI.
 if host_php_ok; then
-  php -r '$p=$argv[1]; $c=include $p; $c["debug"]=false; file_put_contents($p, "<?php return ".var_export($c, true).";\n");' \
-    "${SMOKE_ROOT}/app/config.php"
+  php "${SMOKE_ROOT}/app/flarum" assets:publish >/dev/null 2>&1 || true
   php "${SMOKE_ROOT}/app/flarum" cache:clear >/dev/null 2>&1 || true
 else
-  php_docker "${SMOKE_ROOT}/app" -r '$p="config.php"; $c=include $p; $c["debug"]=false; file_put_contents($p, "<?php return ".var_export($c, true).";\n");'
+  php_docker "${SMOKE_ROOT}/app" flarum assets:publish >/dev/null 2>&1 || true
   php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
 
 ready=0
 for _ in $(seq 1 60); do
-  if curl -s -o /dev/null "${BASE}/api"; then ready=1; break; fi
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "${BASE}/api" || true)"
+  if [[ "${code}" == "200" ]]; then ready=1; break; fi
   sleep 0.25
 done
 [[ "${ready}" == "1" ]] || { cat "${SMOKE_ROOT}/http.log" >&2 || true; fail COMBINED_F2_BOOT "server_not_ready"; }
 
 # Homepage must return 200 before Playwright (PHP built-in can flap 5xx under load).
 home_ready=0
-for _ in $(seq 1 40); do
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${BASE}/" || true)"
+home_body="${EVIDENCE_DIR}/homepage-boot.body"
+for _ in $(seq 1 60); do
+  code="$(curl -s -o "${home_body}" -w '%{http_code}' --max-time 15 "${BASE}/" || true)"
   if [[ "${code}" == "200" ]]; then home_ready=1; break; fi
   sleep 0.5
 done
-[[ "${home_ready}" == "1" ]] || { echo "HOMEPAGE_NOT_READY last=${code:-none}" >&2; tail -80 "${SMOKE_ROOT}/http.log" >&2 || true; fail COMBINED_F2_BOOT "homepage_not_200"; }
+if [[ "${home_ready}" != "1" ]]; then
+  echo "HOMEPAGE_NOT_READY last=${code:-none}" >&2
+  echo "HOMEPAGE_BODY_HEAD=$(head -c 500 "${home_body}" 2>/dev/null || true)" >&2
+  tail -80 "${SMOKE_ROOT}/http.log" >&2 || true
+  ls -lt "${SMOKE_ROOT}/app/storage/logs" >&2 || true
+  tail -80 "${SMOKE_ROOT}/app/storage/logs/"*.log 2>/dev/null >&2 || true
+  fail COMBINED_F2_BOOT "homepage_not_200"
+fi
 echo "HOMEPAGE_READY=PASS"
 
 token_for() {
