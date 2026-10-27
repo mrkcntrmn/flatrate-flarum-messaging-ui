@@ -164,5 +164,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: forum-f2-messaging-browser-evidence
-          path: evidence/forum-f2-messaging-browser/
+          path: |
+            evidence/forum-f2-messaging-browser/
+            test-results/
           if-no-files-found: ignore

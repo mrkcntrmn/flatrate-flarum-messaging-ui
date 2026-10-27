@@ -531,11 +531,29 @@ fi
 rm -f "${SMOKE_ROOT}/app/install.json"
 if host_php_ok; then
   php flarum migrate >/dev/null
+  php flarum extension:enable flatrate-messaging-ui >/dev/null
+  php flarum extension:enable flatrate-private-messages-bridge >/dev/null
+  php flarum extension:enable flatrate-live-chat >/dev/null
   php flarum assets:publish >/dev/null
+  php flarum cache:clear >/dev/null 2>&1 || true
 else
   php_docker "${SMOKE_ROOT}/app" flarum migrate >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-messaging-ui >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-private-messages-bridge >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum extension:enable flatrate-live-chat >/dev/null
   php_docker "${SMOKE_ROOT}/app" flarum assets:publish >/dev/null
+  php_docker "${SMOKE_ROOT}/app" flarum cache:clear >/dev/null 2>&1 || true
 fi
+# Confirm install IDs — wrong IDs silently omit the Messages shell from forum.js.
+ENABLED="$(php -r '
+$pdo=new PDO("mysql:host=".$argv[1].";port=".$argv[2].";dbname=".$argv[3].";charset=utf8mb4",$argv[4],$argv[5],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+$v=$pdo->query("SELECT value FROM settings WHERE `key`=\"extensions_enabled\"")->fetchColumn();
+echo $v ?: "[]";
+' "${DB_HOST}" "${DB_PORT}" "${DB_NAME}" "${DB_USER}" "${DB_PASS}")"
+echo "EXTENSIONS_ENABLED=${ENABLED}"
+echo "${ENABLED}" | grep -q 'flatrate-messaging-ui' || fail COMBINED_F2_BOOT "messaging_ui_not_enabled"
+echo "${ENABLED}" | grep -q 'flatrate-live-chat' || fail COMBINED_F2_BOOT "live_not_enabled"
+echo "${ENABLED}" | grep -q 'flatrate-private-messages-bridge' || fail COMBINED_F2_BOOT "dm_not_enabled"
 RESULT_COMBINED_F2_BOOT=PASS
 pass COMBINED_F2_BOOT
 

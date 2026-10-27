@@ -1,9 +1,31 @@
-import { waitForApp } from './auth.mjs';
+import { waitForApp, gotoStable } from './auth.mjs';
 
 export async function openMessages(page, path = '/messages') {
-  await page.goto(path, { waitUntil: 'domcontentloaded' });
-  await waitForApp(page);
-  await page.waitForSelector('.MessagesPage, .MessagesShell', { timeout: 60_000 });
+  await gotoStable(page, path);
+  try {
+    await page.waitForSelector('.MessagesPage, .MessagesShell', { timeout: 60_000 });
+  } catch (err) {
+    const diag = await page
+      .evaluate(() => {
+        const routes = window.app?.routes ? Object.keys(window.app.routes).sort() : [];
+        return {
+          href: location.href,
+          title: document.title,
+          hasApp: !!(window.app && window.app.forum),
+          user: window.app?.session?.user ? window.app.session.user.username?.() : null,
+          routeKeys: routes,
+          hasMessagesRoute: routes.includes('flatrate-messaging.index'),
+          bodyHead: (document.body?.innerText || '').slice(0, 400),
+          shellCount: document.querySelectorAll('.MessagesPage, .MessagesShell').length,
+          providers: {
+            live: !!window.app?.flatRateMessagingSources?.live,
+            direct: !!window.app?.flatRateMessagingSources?.direct,
+          },
+        };
+      })
+      .catch((e) => ({ evaluateError: String(e) }));
+    throw new Error(`openMessages failed path=${path} diag=${JSON.stringify(diag)} cause=${err && err.message ? err.message : err}`);
+  }
 }
 
 export async function bubbleBodies(page) {
