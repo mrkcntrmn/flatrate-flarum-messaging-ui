@@ -272,19 +272,30 @@ from pathlib import Path
 import os, re
 p = Path(os.environ["DM_LESS"])
 t = p.read_text()
+# F2 no longer injects F1 theme LESS vars into extension compiles. Rewrite to CSS vars
+# (and drop lighten/darken/mix that require compile-time colors).
 repls = [
-  (r"background:\s*@control-bg;", "background: var(--control-bg);"),
   (r"background:\s*mix\(@control-bg,\s*@muted-color,\s*50%\);",
    "background: var(--control-body-bg-mix, color-mix(in srgb, var(--control-bg) 50%, var(--muted-color)));"),
+  (r"color:\s*lighten\(@muted-color,\s*8%\);",
+   "color: var(--muted-color-soft, color-mix(in srgb, var(--muted-color) 85%, white));"),
+  (r"background-color:\s*darken\(@control-bg,\s*2%\);",
+   "background-color: var(--control-bg-dark, color-mix(in srgb, var(--control-bg) 92%, black));"),
+  (r"border:\s*1px dotted @muted-color;", "border: 1px dotted var(--muted-color);"),
+  (r"border-bottom:\s*2px solid @control-bg;", "border-bottom: 2px solid var(--control-bg);"),
   (r"background-color:\s*@text-color;", "background-color: var(--text-color);"),
+  (r"background-color:\s*@body-bg;", "background-color: var(--body-bg);"),
+  (r"background:\s*@control-bg;", "background: var(--control-bg);"),
+  (r"background:\s*@body-bg;", "background: var(--body-bg);"),
   (r"color:\s*@online-user-circle-color;", "color: var(--online-user-circle-color, #7FBA00);"),
   (r"color:\s*@muted-color;", "color: var(--muted-color);"),
-  (r"background:\s*@body-bg;", "background: var(--body-bg);"),
-  (r"border-bottom:\s*2px solid @control-bg;", "border-bottom: 2px solid var(--control-bg);"),
   (r"color:\s*@text-color;", "color: var(--text-color);"),
 ]
 for a, b in repls:
   t = re.sub(a, b, t)
+leftover = sorted(set(re.findall(r'@(?:muted-color|control-bg|text-color|body-bg|online-user-circle-color)\b', t)))
+if leftover:
+  raise SystemExit(f"F2_COMPAT_DM_LESS leftover={leftover}")
 p.write_text(t)
 print("F2_COMPAT_DM_LESS=css_vars")
 PY
