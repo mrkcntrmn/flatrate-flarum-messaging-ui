@@ -67,25 +67,28 @@ export async function sendDirectComposer(page, text) {
     '.MessagesComposer-input, .DirectComposer textarea, textarea.MessagesComposer-input, .MessagesDirectSurface textarea'
   );
   await input.first().waitFor({ state: 'visible', timeout: 45_000 });
-  // Mithril binds value from a Stream; Playwright fill() fights the controlled
-  // input and can hang until the test timeout. Drive input events instead.
+  // Mithril Stream-controlled textarea: fill() fights the binding; a disabled
+  // send button also ignores force-clicks. Type so canSend() enables submit.
   await input.first().click({ force: true });
-  await page.evaluate((body) => {
-    const ta = document.querySelector(
-      '.MessagesDirectSurface textarea.MessagesComposer-input, .DirectComposer textarea, textarea.MessagesComposer-input'
-    );
-    if (!ta) throw new Error('no_direct_composer');
+  await input.first().evaluate((ta) => {
+    ta.focus();
     const proto = window.HTMLTextAreaElement.prototype;
     const desc = Object.getOwnPropertyDescriptor(proto, 'value');
-    if (desc && typeof desc.set === 'function') desc.set.call(ta, body);
-    else ta.value = body;
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
-    ta.dispatchEvent(new Event('change', { bubbles: true }));
-  }, text);
+    if (desc && typeof desc.set === 'function') desc.set.call(ta, '');
+    else ta.value = '';
+    ta.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }));
+  });
+  await input.first().pressSequentially(text, { delay: 12 });
   const send = page.locator(
-    '.MessagesComposer-send, .DirectComposer .Button--primary, form.MessagesComposer button[type="submit"]'
+    '.MessagesDirectSurface .MessagesComposer-send, form.MessagesComposer .MessagesComposer-send'
   );
-  await send.first().click({ force: true });
+  await page.waitForFunction(() => {
+    const btn = document.querySelector(
+      '.MessagesDirectSurface .MessagesComposer-send, form.MessagesComposer .MessagesComposer-send'
+    );
+    return !!(btn && !btn.disabled && !btn.classList.contains('disabled') && !btn.classList.contains('loading'));
+  }, null, { timeout: 15_000 });
+  await send.first().click();
   await waitForBubbleText(page, text, 45_000);
 }
 
