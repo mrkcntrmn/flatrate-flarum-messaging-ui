@@ -22,17 +22,26 @@ EVIDENCE_DIR="${BROWSER_EVIDENCE_DIR:-${MSG_ROOT}/evidence/forum-f2-messaging-br
 FLARUM_SKELETON_VERSION="${FLARUM_SKELETON_VERSION:-2.0.0}"
 EXPECTED_CORE="${FLARUM_CORE_VERSION:-2.0.2}"
 
-pick_port() {
-  python3 - <<'PY'
+# Reserve three distinct ports atomically. Sequential bind-and-close can collide
+# (Flarum/edge previously shared a port; /api then hit the publish edge → 404).
+if [[ -z "${FLARUM_HOST_PORT:-}" || -z "${CENTRIFUGO_HOST_PORT:-}" || -z "${EDGE_HOST_PORT:-}" ]]; then
+  read -r FLARUM_HOST_PORT CENTRIFUGO_HOST_PORT EDGE_HOST_PORT < <(python3 - <<'PY'
 import socket
-s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()
+ports=[]
+socks=[]
+for _ in range(3):
+    s=socket.socket(); s.bind(("127.0.0.1",0)); ports.append(s.getsockname()[1]); socks.append(s)
+for s in socks: s.close()
+print(*ports)
 PY
-}
-FLARUM_HOST_PORT="${FLARUM_HOST_PORT:-$(pick_port)}"
-CENTRIFUGO_HOST_PORT="${CENTRIFUGO_HOST_PORT:-$(pick_port)}"
-EDGE_HOST_PORT="${EDGE_HOST_PORT:-$(pick_port)}"
+)
+fi
 BASE="http://127.0.0.1:${FLARUM_HOST_PORT}"
 echo "PORTS flarum=${FLARUM_HOST_PORT} centrifugo=${CENTRIFUGO_HOST_PORT} edge=${EDGE_HOST_PORT}"
+if [[ "${FLARUM_HOST_PORT}" == "${EDGE_HOST_PORT}" || "${FLARUM_HOST_PORT}" == "${CENTRIFUGO_HOST_PORT}" || "${EDGE_HOST_PORT}" == "${CENTRIFUGO_HOST_PORT}" ]]; then
+  echo "COMBINED_F2_BOOT=FAIL port_collision flarum=${FLARUM_HOST_PORT} centrifugo=${CENTRIFUGO_HOST_PORT} edge=${EDGE_HOST_PORT}" >&2
+  exit 1
+fi
 
 DB_HOST="${FLARUM_DB_HOST:-127.0.0.1}"
 DB_PORT="${FLARUM_DB_PORT:-3306}"
