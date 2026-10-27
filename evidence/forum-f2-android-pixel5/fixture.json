@@ -1,24 +1,26 @@
 {
-    "baseUrl": "http://127.0.0.1:18771",
-    "conversationId": "1",
-    "generalRoomKey": "community-general-live",
-    "generalChatId": 2,
-    "realtimeEnabled": true,
-    "passwords": {
-        "alice": "alice-pass-1",
-        "bob": "bob-pass-1",
-        "carol": "carol-pass-1",
-        "sam": "sam-pass-1"
-    },
-    "seeds": {
-        "dmOne": "dm-seed-one",
-        "dmTwo": "dm-seed-two",
-        "liveOne": "live-seed-one",
-        "liveTwo": "live-seed-two"
-    },
-    "pins": {
-        "dm": "d2c7480b3b705adae4fc5506f0ecf4dd68e316cd",
-        "live": "b048f30a6bdef3e8bb1d29ded9ebd1975688603c",
-        "messagingUi": "4ea2812ad46654d15307bc5c62b46cfce9609956"
-    }
+  "baseUrl": "http://127.0.0.1:18771",
+  "conversationId": "1",
+  "generalRoomKey": "community-general-live",
+  "generalChatId": 2,
+  "realtimeEnabled": true,
+  "passwords": {
+    "alice": "REDACTED_SYNTHETIC",
+    "bob": "REDACTED_SYNTHETIC",
+    "carol": "REDACTED_SYNTHETIC",
+    "sam": "REDACTED_SYNTHETIC"
+  },
+  "seeds": {
+    "dmOne": "dm-seed-one",
+    "dmTwo": "dm-seed-two",
+    "liveOne": "live-seed-one",
+    "liveTwo": "live-seed-two"
+  },
+  "pins": {
+    "dm": "d2c7480b3b705adae4fc5506f0ecf4dd68e316cd",
+    "live": "b048f30a6bdef3e8bb1d29ded9ebd1975688603c",
+    "messagingUi": "4ea2812ad46654d15307bc5c62b46cfce9609956"
+  },
+  "note": "Synthetic disposable fixture metadata only. Credentials redacted for release evidence hygiene.",
+  "updatedAt": "2026-10-27T22:12:15.102Z"
 }

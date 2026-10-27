@@ -45,3 +45,6 @@ EVIDENCE_LOCATION=/home/ilove/dev/_worktrees/messaging-ui-f2-android-001/evidenc
 PRODUCTION_MUTATED=false
 FIXTURE_NOTES=ANDROID_DEVICE_ACCEPTANCE_HOLD=1; SKIP_PLAYWRIGHT reused CI run 40580143128; PHP8.4 unset PHP_CLI_SERVER_WORKERS; debug=false for stable single-process serve; DM head d2c7480 runtime delta HTTP-assertion-only
 POST_HOLD_DISABLE_FALLBACK=FAIL_EXIT_127_manual_service_cleanup_PASS
+EVIDENCE_SANITIZATION=PASS
+POST_HOLD_FIXTURE_EXIT=127
+PIXEL5_ACCEPTANCE=PASS

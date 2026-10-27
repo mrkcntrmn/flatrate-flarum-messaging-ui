@@ -43,3 +43,11 @@ REALTIME_REVOCATION_POLICY=PENDING_OWNER
 FORUM_DB_RECOVERY_REHEARSAL=NOT_PROVEN
 PRODUCTION_DEPLOYMENT_AUTHORIZED=false
 ```
+
+## Evidence hygiene (FORUM-F2-R4-RELEASE-QUALIFICATION)
+
+- `fixture.json` synthetic passwords redacted to `REDACTED_SYNTHETIC`.
+- Raw HTTP diagnostic bodies removed from distributable evidence.
+- `PIXEL5_ACCEPTANCE=PASS` preserved.
+- `POST_HOLD_FIXTURE_EXIT=127` remains a separate post-hold cleanup note, not a device failure.
+- Screenshots are synthetic disposable fixture UI only.
