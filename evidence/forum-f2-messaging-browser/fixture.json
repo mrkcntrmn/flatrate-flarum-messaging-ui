@@ -1,0 +1,25 @@
+{
+    "baseUrl": "http://127.0.0.1:17980",
+    "conversationId": "1",
+    "generalRoomKey": "community-general-live",
+    "generalChatId": 2,
+    "realtimeEnabled": true,
+    "passwords": {
+        "alice": "alice-pass-1",
+        "bob": "bob-pass-1",
+        "carol": "carol-pass-1",
+        "sam": "sam-pass-1"
+    },
+    "seeds": {
+        "dmOne": "dm-seed-one",
+        "dmTwo": "dm-seed-two",
+        "liveOne": "live-seed-one",
+        "liveTwo": "live-seed-two"
+    },
+    "pins": {
+        "dm": "ea9f7dadda8c0d305644282be78aa137fd570651",
+        "live": "7f08266363105f76f0202333039351c5c7b92be6",
+        "messagingUi": "d33d096eb7746b223cc31c4c45f68dd275ba93cc"
+    },
+    "updatedAt": "2026-10-27T17:20:36+00:00"
+}

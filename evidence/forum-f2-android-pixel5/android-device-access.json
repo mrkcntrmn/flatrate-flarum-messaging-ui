@@ -1,0 +1,20 @@
+{
+    "workOrder": "FORUM-F2-ANDROID-ACCEPTANCE-001",
+    "startedAt": "2026-10-27T21:13:14Z",
+    "holdMaxSeconds": 3600,
+    "completionMarker": "/tmp/flarum-messaging-browser-f2-3076370/android-device-acceptance.complete",
+    "flarumBaseUrl": "http://127.0.0.1:18771",
+    "flarumHostPort": 18771,
+    "centrifugoHostPort": 18772,
+    "edgeHostPort": 18773,
+    "centrifugoWsUrl": "ws://127.0.0.1:18772/connection/websocket",
+    "messagesUrl": "http://127.0.0.1:18771/messages",
+    "smokeRoot": "/tmp/flarum-messaging-browser-f2-3076370",
+    "pins": {
+        "dm": "d2c7480b3b705adae4fc5506f0ecf4dd68e316cd",
+        "live": "b048f30a6bdef3e8bb1d29ded9ebd1975688603c",
+        "messagingUi": "4ea2812ad46654d15307bc5c62b46cfce9609956"
+    },
+    "providersEnabled": true,
+    "note": "Synthetic disposable fixture. Signal completion with: touch <completionMarker>. Services stay up until then or holdMaxSeconds; EXIT cleanup remains armed."
+}

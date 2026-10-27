@@ -17,6 +17,10 @@ use FlatRate\MessagingUi\Notifications\RecordNotificationsRolloutChange;
 use FlatRate\MessagingUi\Seo\MessagingIndexingPolicy;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
+if (!class_exists(\Flarum\Api\Controller\AbstractShowController::class)) {
+    return require __DIR__.'/extend-f2.php';
+}
+
 return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__.'/js/dist/forum.js')

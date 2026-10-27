@@ -1,6 +1,6 @@
 {
     "name": "flatrate/flarum-messaging-ui",
-    "description": "Unified Messages shell for FlatRate.wiki Flarum 1.8 (Live Chat + Direct Messages).",
+    "description": "Unified Messages shell for FlatRate.wiki Flarum 1.8 and Flarum 2.0 (Live Chat + Direct Messages presentation).",
     "keywords": [
         "flarum",
         "flatrate",
@@ -16,8 +16,8 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "flarum/core": "^1.8.19"
+        "php": "^8.1 || ^8.3",
+        "flarum/core": "^1.8.19 || ^2.0.2"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.6"
@@ -37,7 +37,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.x-dev"
+            "dev-main": "1.x-dev",
+            "dev-feat/forum-f2-messaging-ui-001": "2.0.x-dev"
         },
         "flarum-extension": {
             "title": "Messages",

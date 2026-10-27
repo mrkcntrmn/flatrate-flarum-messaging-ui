@@ -8,3 +8,12 @@ js/node_modules
 .idea
 .phpunit.result.cache
 *.log
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+evidence/forum-f2-messaging-browser/*.log
+evidence/forum-f2-messaging-browser/playwright-report.json
+evidence/forum-f2-messaging-browser/http.log
+.pins/
+.smoke-browser/

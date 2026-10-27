@@ -1,0 +1,13 @@
+{
+  "name": "flatrate-messaging-ui-browser",
+  "private": true,
+  "type": "module",
+  "description": "Chromium/Playwright acceptance for Flarum 2 combined Messaging UI (Lane A browser).",
+  "scripts": {
+    "test:browser": "playwright test",
+    "test:browser:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1"
+  }
+}
