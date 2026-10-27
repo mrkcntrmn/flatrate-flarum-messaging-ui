@@ -72,6 +72,18 @@ pass() { echo "$1=PASS${2:+ $2}"; }
 fail() { echo "$1=FAIL${2:+ $2}" >&2; exit 1; }
 not_proven() { echo "$1=NOT_PROVEN${2:+ $2}"; }
 
+# Used when no pre-existing MariaDB is reachable (local disposable path).
+# CI service containers take the db_ready branch and never call this.
+pick_port() {
+  python3 - <<'PY'
+import socket
+s = socket.socket()
+s.bind(("127.0.0.1", 0))
+print(s.getsockname()[1])
+s.close()
+PY
+}
+
 emit_receipts() {
   local receipts="${EVIDENCE_DIR}/receipts.json"
   echo "---- Lane A browser receipts ----"
@@ -494,7 +506,7 @@ pass COMBINED_COMPOSER "core=${INSTALLED_CORE}"
 
 cat > "${SMOKE_ROOT}/app/install.json" <<EOF
 {
-  "debug": true,
+  "debug": false,
   "baseUrl": "${BASE}",
   "databaseConfiguration": {
     "driver": "mysql",
@@ -624,8 +636,10 @@ require __DIR__ . '/index.php';
 PHP
 
 start_flarum_server() {
-  # Single worker: multi-worker PHP built-in races produce sustained empty 500s.
-  export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-1}"
+  # PHP 8.4 rejects PHP_CLI_SERVER_WORKERS=1 ("number of workers must be larger
+  # than 1"). Leave the variable unset for single-process mode. Multi-worker
+  # races previously produced empty 500s on this fixture, so do not default it.
+  unset PHP_CLI_SERVER_WORKERS || true
   if host_php_ok; then
     (
       cd "${SMOKE_ROOT}/app/public"
@@ -637,7 +651,6 @@ start_flarum_server() {
       FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY_FILE="${SMOKE_ROOT}/keys/jwt-private.pem" \
       FLATRATE_LIVE_CHAT_CENTRIFUGO_CONNECTION_TTL=300 \
       FLATRATE_LIVE_CHAT_CENTRIFUGO_SUBSCRIPTION_TTL=300 \
-      PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS}" \
       php -S "127.0.0.1:${FLARUM_HOST_PORT}" router.php > "${SMOKE_ROOT}/http.log" 2>&1
     ) &
     HTTP_PID=$!
@@ -655,7 +668,6 @@ start_flarum_server() {
       -e FLATRATE_LIVE_CHAT_CENTRIFUGO_JWT_PRIVATE_KEY_FILE="${SMOKE_ROOT}/keys/jwt-private.pem" \
       -e FLATRATE_LIVE_CHAT_CENTRIFUGO_CONNECTION_TTL=300 \
       -e FLATRATE_LIVE_CHAT_CENTRIFUGO_SUBSCRIPTION_TTL=300 \
-      -e PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS}" \
       flatrate-php84-f2:local \
       php -S "127.0.0.1:${FLARUM_HOST_PORT}" router.php)"
   fi
@@ -874,65 +886,151 @@ $f = [
 file_put_contents($argv[8], json_encode($f, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");
 ' "${BASE}" "${CONV_ID}" "${GENERAL_ID}" "${REALTIME_ENABLED}" "${DM_SHA}" "${LIVE_SHA}" "${MSG_SHA}" "${EVIDENCE_DIR}/fixture.json"
 
-# Install Playwright (repo root) + Chromium
-cd "${MSG_ROOT}"
-if [[ ! -d node_modules/@playwright/test ]]; then
-  npm install --no-fund --no-audit
-fi
+# Optional physical-device hold: keep disposable Flarum + Centrifugo + MariaDB online
+# so ADB reverse can reach the same fixture. KEEP_SMOKE_ROOT alone preserves files
+# only; this gate preserves running services until an explicit marker (or the
+# bounded timeout) then continues into disable-fallback + EXIT cleanup.
+android_device_acceptance_hold() {
+  if [[ "${ANDROID_DEVICE_ACCEPTANCE_HOLD:-0}" != "1" ]]; then
+    return 0
+  fi
+  if [[ "${RESULT_PLAYWRIGHT}" != "PASS" ]]; then
+    echo "ANDROID_DEVICE_ACCEPTANCE_HOLD=SKIP playwright_not_pass" | tee -a "${EVIDENCE_DIR}/browser.log"
+    return 0
+  fi
 
-# Prefer managed Playwright Chromium. Skip download when a matching binary is cached.
-# On hosts where CDN downloads fail, allow system Chrome/Chromium via
-# PLAYWRIGHT_CHROME_CHANNEL / PLAYWRIGHT_EXECUTABLE_PATH.
-if [[ "${PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD:-0}" != "1" ]]; then
-  if [[ -x "${HOME}/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome" ]]; then
-    echo "PLAYWRIGHT_INSTALL=SKIP cached_chromium-1234" | tee -a "${EVIDENCE_DIR}/browser.log"
-  elif ! npx --yes playwright install chromium; then
-    echo "PLAYWRIGHT_INSTALL=WARN managed_chromium_failed; trying system chrome channel" | tee -a "${EVIDENCE_DIR}/browser.log"
-    if command -v google-chrome-stable >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1; then
-      export PLAYWRIGHT_CHROME_CHANNEL=chrome
-      export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-    elif command -v chromium >/dev/null 2>&1; then
-      export PLAYWRIGHT_EXECUTABLE_PATH="$(command -v chromium)"
-      export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-    else
-      fail PLAYWRIGHT_INSTALL "chromium_download_failed_and_no_system_browser"
+  local hold_max="${ANDROID_DEVICE_ACCEPTANCE_HOLD_SECONDS:-3600}"
+  local marker="${SMOKE_ROOT}/android-device-acceptance.complete"
+  local meta="${EVIDENCE_DIR}/android-device-access.json"
+  local started
+  started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  rm -f "${marker}"
+
+  php -r '
+    $meta = [
+      "workOrder" => "FORUM-F2-ANDROID-ACCEPTANCE-001",
+      "startedAt" => $argv[1],
+      "holdMaxSeconds" => (int)$argv[2],
+      "completionMarker" => $argv[3],
+      "flarumBaseUrl" => $argv[4],
+      "flarumHostPort" => (int)$argv[5],
+      "centrifugoHostPort" => (int)$argv[6],
+      "edgeHostPort" => (int)$argv[7],
+      "centrifugoWsUrl" => $argv[8],
+      "messagesUrl" => $argv[4]."/messages",
+      "smokeRoot" => $argv[9],
+      "pins" => [
+        "dm" => $argv[10],
+        "live" => $argv[11],
+        "messagingUi" => $argv[12],
+      ],
+      "providersEnabled" => true,
+      "note" => "Synthetic disposable fixture. Signal completion with: touch <completionMarker>. Services stay up until then or holdMaxSeconds; EXIT cleanup remains armed.",
+    ];
+    file_put_contents($argv[13], json_encode($meta, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");
+  ' "${started}" "${hold_max}" "${marker}" "${BASE}" \
+    "${FLARUM_HOST_PORT}" "${CENTRIFUGO_HOST_PORT}" "${EDGE_HOST_PORT}" \
+    "${CENTRIFUGO_WS}" "${SMOKE_ROOT}" "${DM_SHA}" "${LIVE_SHA}" "${MSG_SHA}" "${meta}"
+
+  echo "---- ANDROID_DEVICE_ACCEPTANCE_HOLD ----"
+  echo "ANDROID_DEVICE_ACCEPTANCE_HOLD=1"
+  echo "FLARUM_BASE_URL=${BASE}"
+  echo "FLARUM_HOST_PORT=${FLARUM_HOST_PORT}"
+  echo "CENTRIFUGO_HOST_PORT=${CENTRIFUGO_HOST_PORT}"
+  echo "EDGE_HOST_PORT=${EDGE_HOST_PORT}"
+  echo "CENTRIFUGO_WS_URL=${CENTRIFUGO_WS}"
+  echo "MESSAGES_URL=${BASE}/messages"
+  echo "COMPLETION_MARKER=${marker}"
+  echo "HOLD_MAX_SECONDS=${hold_max}"
+  echo "DEVICE_ACCESS_META=${meta}"
+  echo "Signal completion: touch '${marker}'"
+  echo "Providers remain ENABLED during hold; disable-fallback runs after."
+
+  local elapsed=0
+  while [[ ! -f "${marker}" && "${elapsed}" -lt "${hold_max}" ]]; do
+    sleep 2
+    elapsed=$((elapsed + 2))
+    if (( elapsed % 60 == 0 )); then
+      echo "ANDROID_DEVICE_ACCEPTANCE_HOLD waiting elapsed=${elapsed}s marker=${marker}"
     fi
+  done
+
+  if [[ -f "${marker}" ]]; then
+    echo "ANDROID_DEVICE_ACCEPTANCE_HOLD=COMPLETE elapsed=${elapsed}s" | tee -a "${EVIDENCE_DIR}/browser.log"
+  else
+    echo "ANDROID_DEVICE_ACCEPTANCE_HOLD=TIMEOUT elapsed=${elapsed}s max=${hold_max}" | tee -a "${EVIDENCE_DIR}/browser.log"
+  fi
+}
+
+# Optional: skip local Playwright and enter device hold after seed/boot.
+# Use only when exact-head Chromium CI is already green and the mission is
+# physical-device acceptance against the same disposable fixture.
+if [[ "${ANDROID_DEVICE_ACCEPTANCE_SKIP_PLAYWRIGHT:-0}" == "1" && "${ANDROID_DEVICE_ACCEPTANCE_HOLD:-0}" == "1" ]]; then
+  RESULT_PLAYWRIGHT=PASS
+  echo "PLAYWRIGHT_SUITE=SKIPPED_FOR_DEVICE_HOLD reuse_ci=${ANDROID_DEVICE_ACCEPTANCE_CI_URL:-https://github.com/mrkcntrmn/flatrate-flarum-messaging-ui/actions/runs/40580143128}"
+else
+  # Install Playwright (repo root) + Chromium
+  cd "${MSG_ROOT}"
+  if [[ ! -d node_modules/@playwright/test ]]; then
+    npm install --no-fund --no-audit
+  fi
+
+  # Prefer managed Playwright Chromium. Skip download when a matching binary is cached.
+  # On hosts where CDN downloads fail, allow system Chrome/Chromium via
+  # PLAYWRIGHT_CHROME_CHANNEL / PLAYWRIGHT_EXECUTABLE_PATH.
+  if [[ "${PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD:-0}" != "1" ]]; then
+    if [[ -x "${HOME}/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome" ]]; then
+      echo "PLAYWRIGHT_INSTALL=SKIP cached_chromium-1234" | tee -a "${EVIDENCE_DIR}/browser.log"
+    elif ! npx --yes playwright install chromium; then
+      echo "PLAYWRIGHT_INSTALL=WARN managed_chromium_failed; trying system chrome channel" | tee -a "${EVIDENCE_DIR}/browser.log"
+      if command -v google-chrome-stable >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1; then
+        export PLAYWRIGHT_CHROME_CHANNEL=chrome
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+      elif command -v chromium >/dev/null 2>&1; then
+        export PLAYWRIGHT_EXECUTABLE_PATH="$(command -v chromium)"
+        export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+      else
+        fail PLAYWRIGHT_INSTALL "chromium_download_failed_and_no_system_browser"
+      fi
+    fi
+  fi
+
+  # Prefer Node 20+LTS for Playwright 1.49 (Node 26 hangs on this host).
+  if [[ -z "${PLAYWRIGHT_NODE:-}" ]]; then
+    for cand in \
+      "${MSG_ROOT}/.tools/node20/bin/node" \
+      /home/ilove/dev/_disposable/node20/node-v20.19.5-linux-x64/bin/node \
+      /tmp/node-v20.19.5-linux-x64/bin/node \
+      "$(command -v node)"; do
+      if [[ -x "${cand}" ]] && "${cand}" -e 'process.exit(Number(process.versions.node.split(".")[0])>=20&&Number(process.versions.node.split(".")[0])<22?0:1)' 2>/dev/null; then
+        PLAYWRIGHT_NODE="${cand}"
+        break
+      fi
+    done
+  fi
+  PLAYWRIGHT_NODE="${PLAYWRIGHT_NODE:-$(command -v node)}"
+  export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-${HOME}/.cache/ms-playwright}"
+  unset PLAYWRIGHT_CHROME_CHANNEL || true
+
+  export BROWSER_FIXTURE_PATH="${EVIDENCE_DIR}/fixture.json"
+  export BROWSER_RECEIPT_PATH="${EVIDENCE_DIR}/receipts.json"
+  export BROWSER_BASE_URL="${BASE}"
+  rm -f "${EVIDENCE_DIR}/receipts.json"
+
+  set +e
+  "${PLAYWRIGHT_NODE}" "${MSG_ROOT}/node_modules/@playwright/test/cli.js" test --config="${MSG_ROOT}/playwright.config.mjs" --reporter=line 2>&1 | tee "${EVIDENCE_DIR}/browser.log"
+  PW_EC=${PIPESTATUS[0]}
+  set -e
+  if [[ "${PW_EC}" -eq 0 ]]; then
+    RESULT_PLAYWRIGHT=PASS
+    pass PLAYWRIGHT_SUITE
+  else
+    RESULT_PLAYWRIGHT=FAIL
+    echo "PLAYWRIGHT_SUITE=FAIL exit=${PW_EC}" >&2
   fi
 fi
 
-# Prefer Node 20+LTS for Playwright 1.49 (Node 26 hangs on this host).
-if [[ -z "${PLAYWRIGHT_NODE:-}" ]]; then
-  for cand in \
-    "${MSG_ROOT}/.tools/node20/bin/node" \
-    /home/ilove/dev/_disposable/node20/node-v20.19.5-linux-x64/bin/node \
-    /tmp/node-v20.19.5-linux-x64/bin/node \
-    "$(command -v node)"; do
-    if [[ -x "${cand}" ]] && "${cand}" -e 'process.exit(Number(process.versions.node.split(".")[0])>=20&&Number(process.versions.node.split(".")[0])<22?0:1)' 2>/dev/null; then
-      PLAYWRIGHT_NODE="${cand}"
-      break
-    fi
-  done
-fi
-PLAYWRIGHT_NODE="${PLAYWRIGHT_NODE:-$(command -v node)}"
-export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-${HOME}/.cache/ms-playwright}"
-unset PLAYWRIGHT_CHROME_CHANNEL || true
-
-export BROWSER_FIXTURE_PATH="${EVIDENCE_DIR}/fixture.json"
-export BROWSER_RECEIPT_PATH="${EVIDENCE_DIR}/receipts.json"
-export BROWSER_BASE_URL="${BASE}"
-rm -f "${EVIDENCE_DIR}/receipts.json"
-
-set +e
-"${PLAYWRIGHT_NODE}" "${MSG_ROOT}/node_modules/@playwright/test/cli.js" test --config="${MSG_ROOT}/playwright.config.mjs" --reporter=line 2>&1 | tee "${EVIDENCE_DIR}/browser.log"
-PW_EC=${PIPESTATUS[0]}
-set -e
-if [[ "${PW_EC}" -eq 0 ]]; then
-  RESULT_PLAYWRIGHT=PASS
-  pass PLAYWRIGHT_SUITE
-else
-  RESULT_PLAYWRIGHT=FAIL
-  echo "PLAYWRIGHT_SUITE=FAIL exit=${PW_EC}" >&2
-fi
+android_device_acceptance_hold
 
 # Disable-provider fallback (HTTP + shell still loads) — after browser suite so providers were available for tests.
 # Disabled APIs must not stay open (200) and must not crash (5xx). Prefer 401/403/404.

@@ -1,0 +1,7 @@
+DM_SOURCE=d2c7480b3b705adae4fc5506f0ecf4dd68e316cd
+LIVE_SOURCE=b048f30a6bdef3e8bb1d29ded9ebd1975688603c
+MESSAGING_UI_SOURCE=4ea2812ad46654d15307bc5c62b46cfce9609956
+REVOCATION_WINDOW_SECONDS=296
+REVOCATION_POLICY=PENDING_OWNER
+REVOCATION_NOTE=Lane B Centrifugo e2e measured already-issued JWTs remain valid until exp (~296s); active subscribers keep receiving until expiry; no instant disconnect claimed.
+REVOCATION_EVIDENCE_SOURCE=/home/ilove/dev/_disposable/forum-f2-android-001-pins/live/evidence/forum-f2-centrifugo-e2e/results.json

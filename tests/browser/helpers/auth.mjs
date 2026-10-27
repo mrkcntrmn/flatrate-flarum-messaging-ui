@@ -89,9 +89,38 @@ export async function loginAs(page, username, password) {
     await logInButton.first().click();
     const modal = page.locator('.LogInModal, .Modal.LogInModal');
     await modal.waitFor({ state: 'visible', timeout: 15_000 });
-    await page.locator('.LogInModal input[name="identification"], input[name="identification"]').fill(username);
-    await page.locator('.LogInModal input[name="password"], input[name="password"]').fill(password);
-    await page.locator('.LogInModal .Button--primary, .Modal-footer .Button--primary').first().click();
+    // Flarum 2 LogInModal binds identification/password via Mithril Streams.
+    // Playwright fill() can leave Stream state empty (same class of bug as the
+    // Direct composer). Set native values + input events, then requestSubmit.
+    await page.evaluate(({ username: u, password: p }) => {
+      const id = document.querySelector(
+        '.LogInModal input[name="identification"], input[name="identification"]'
+      );
+      const pw = document.querySelector(
+        '.LogInModal input[name="password"], input[name="password"]'
+      );
+      if (!id || !pw) throw new Error('login_inputs_missing');
+      const setNative = (el, value) => {
+        const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+        if (desc && typeof desc.set === 'function') desc.set.call(el, value);
+        else el.value = value;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      setNative(id, u);
+      setNative(pw, p);
+      if (window.m && typeof window.m.redraw === 'function') window.m.redraw();
+      const form = document.querySelector('.LogInModal form, .Modal.LogInModal form, form.Form');
+      if (form && typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+        return;
+      }
+      const btn = document.querySelector(
+        '.LogInModal .Button--primary, .Modal.LogInModal .Button--primary, .Modal-footer .Button--primary'
+      );
+      if (!btn) throw new Error('login_submit_missing');
+      btn.click();
+    }, { username, password });
     await page.waitForFunction(
       (u) => {
         const user = window.app?.session?.user;
