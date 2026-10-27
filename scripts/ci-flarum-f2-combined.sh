@@ -24,6 +24,51 @@ DB_NAME="${FLARUM_DB_DATABASE:-flarum_combined_f2}"
 DB_USER="${FLARUM_DB_USERNAME:-root}"
 DB_PASS="${FLARUM_DB_PASSWORD:-disposable-local}"
 
+# Host PHP often lacks ext-dom/gd/intl/curl. Prefer disposable PHP 8.4 image.
+maybe_reexec_docker() {
+  if [[ "${COMBINED_F2_IN_DOCKER:-0}" == "1" ]]; then
+    return 0
+  fi
+  if php -r 'exit((extension_loaded("dom") && extension_loaded("pdo_mysql") && extension_loaded("curl")) ? 0 : 1);' 2>/dev/null; then
+    return 0
+  fi
+  local image=""
+  if docker image inspect flatrate-php84-f2:local >/dev/null 2>&1; then
+    image="flatrate-php84-f2:local"
+  elif docker image inspect php:8.4-cli >/dev/null 2>&1; then
+    image="php:8.4-cli"
+  else
+    echo "COMBINED_COMPOSER=FAIL host_php_missing_extensions_and_no_docker_image" >&2
+    exit 1
+  fi
+  echo "COMBINED_F2=REEXEC image=${image}"
+  exec docker run --rm --network host \
+    -e COMBINED_F2_IN_DOCKER=1 \
+    -e FLARUM_SMOKE_ROOT \
+    -e COMBINED_EVIDENCE_DIR \
+    -e KEEP_SMOKE_ROOT \
+    -e FLARUM_SKELETON_VERSION \
+    -e FLARUM_CORE_VERSION \
+    -e FLARUM_DB_HOST \
+    -e FLARUM_DB_PORT \
+    -e FLARUM_DB_DATABASE \
+    -e FLARUM_DB_USERNAME \
+    -e FLARUM_DB_PASSWORD \
+    -e COMBINED_DM_ROOT \
+    -e COMBINED_LIVE_ROOT \
+    -e COMBINED_MESSAGING_UI_ROOT \
+    -e MARIA_CID \
+    -v "${MSG_ROOT}:${MSG_ROOT}" \
+    -v "${DM_ROOT}:${DM_ROOT}" \
+    -v "${LIVE_ROOT}:${LIVE_ROOT}" \
+    -v "${TMPDIR:-/tmp}:${TMPDIR:-/tmp}" \
+    -w "${MSG_ROOT}" \
+    "${image}" \
+    bash "${MSG_ROOT}/scripts/ci-flarum-f2-combined.sh"
+}
+
+maybe_reexec_docker
+
 pass() { echo "$1=PASS${2:+ $2}"; }
 fail() { echo "$1=FAIL${2:+ $2}" >&2; exit 1; }
 not_proven() { echo "$1=NOT_PROVEN${2:+ $2}"; }
@@ -322,8 +367,8 @@ MSG_JS="$(find vendor/flatrate/flarum-messaging-ui/js/dist -name 'forum.js' | he
 [[ -n "${LIVE_JS}" && -f "${LIVE_JS}" ]] || fail F2_PROVIDER_LIVE_REGISTERED "dist_missing"
 [[ -n "${MSG_JS}" && -f "${MSG_JS}" ]] || fail COMBINED_F2_BOOT "messaging_dist_missing"
 
-rg -q "flatRateMessagingSources" "${DM_JS}" || fail F2_PROVIDER_DIRECT_REGISTERED "bundle_missing_key"
-rg -q "flatRateMessagingSources" "${LIVE_JS}" || fail F2_PROVIDER_LIVE_REGISTERED "bundle_missing_key"
+grep -Fq "flatRateMessagingSources" "${DM_JS}" || fail F2_PROVIDER_DIRECT_REGISTERED "bundle_missing_key"
+grep -Fq "flatRateMessagingSources" "${LIVE_JS}" || fail F2_PROVIDER_LIVE_REGISTERED "bundle_missing_key"
 
 # Node harness: evaluate that entry source contracts register keys (compiled bundles minify names;
 # also assert extend-f2 registers the F2 assets and source entries call register*).
@@ -378,7 +423,7 @@ function get(path) {
   process.exit(0);
 });
 NODE
-  if rg -q 'PLAYWRIGHT=absent' "${EVIDENCE_DIR}/provider-browser.txt"; then
+  if grep -Fq 'PLAYWRIGHT=absent' "${EVIDENCE_DIR}/provider-browser.txt"; then
     not_proven DIRECT_REAL_BROWSER_READ_SEND "no_playwright"
     not_proven LIVE_REAL_BROWSER_READ_SEND "no_playwright"
   fi
