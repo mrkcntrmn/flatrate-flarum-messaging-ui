@@ -266,38 +266,31 @@ apply_f2_browser_compat() {
   fi
   echo "F2_COMPAT_LIVE_PIN_ASSETS=exact" | tee -a "${EVIDENCE_DIR}/browser.log"
 
-  if [[ -f "${dm_less}" ]] && grep -qE '@control-bg|@muted-color|@text-color|@body-bg|@online-user-circle-color' "${dm_less}"; then
+  if [[ -f "${dm_less}" ]] && ! grep -q 'F2_BROWSER_THEME_VARS' "${dm_less}"; then
     DM_LESS="${dm_less}" python3 - <<'PY'
 from pathlib import Path
-import os, re
+import os
 p = Path(os.environ["DM_LESS"])
 t = p.read_text()
-# F2 no longer injects F1 theme LESS vars into extension compiles. Rewrite to CSS vars
-# (and drop lighten/darken/mix that require compile-time colors).
-repls = [
-  (r"background:\s*mix\(@control-bg,\s*@muted-color,\s*50%\);",
-   "background: var(--control-body-bg-mix, color-mix(in srgb, var(--control-bg) 50%, var(--muted-color)));"),
-  (r"color:\s*lighten\(@muted-color,\s*8%\);",
-   "color: var(--muted-color-soft, color-mix(in srgb, var(--muted-color) 85%, white));"),
-  (r"background-color:\s*darken\(@control-bg,\s*2%\);",
-   "background-color: var(--control-bg-dark, color-mix(in srgb, var(--control-bg) 92%, black));"),
-  (r"border:\s*1px dotted @muted-color;", "border: 1px dotted var(--muted-color);"),
-  (r"border-bottom:\s*2px solid @control-bg;", "border-bottom: 2px solid var(--control-bg);"),
-  (r"background-color:\s*@text-color;", "background-color: var(--text-color);"),
-  (r"background-color:\s*@body-bg;", "background-color: var(--body-bg);"),
-  (r"background:\s*@control-bg;", "background: var(--control-bg);"),
-  (r"background:\s*@body-bg;", "background: var(--body-bg);"),
-  (r"color:\s*@online-user-circle-color;", "color: var(--online-user-circle-color, #7FBA00);"),
-  (r"color:\s*@muted-color;", "color: var(--muted-color);"),
-  (r"color:\s*@text-color;", "color: var(--text-color);"),
-]
-for a, b in repls:
-  t = re.sub(a, b, t)
-leftover = sorted(set(re.findall(r'@(?:muted-color|control-bg|text-color|body-bg|online-user-circle-color)\b', t)))
-if leftover:
-  raise SystemExit(f"F2_COMPAT_DM_LESS leftover={leftover}")
-p.write_text(t)
-print("F2_COMPAT_DM_LESS=css_vars")
+# F2 no longer injects F1 theme palette into extension LESS compiles. Provide
+# compile-time stubs so lighten/darken/mix and bare @vars resolve.
+header = """\
+// F2_BROWSER_THEME_VARS — disposable Chromium fixture only (not a product theme).
+@body-bg: #ffffff;
+@control-bg: #e8ecf0;
+@control-color: #333333;
+@muted-color: #667788;
+@text-color: #111111;
+@online-user-circle-color: #7FBA00;
+@shadow-color: rgba(0, 0, 0, 0.12);
+@border-radius: 4px;
+@screen-tablet: 768px;
+@screen-tablet-max: 991px;
+@screen-desktop: 992px;
+
+"""
+p.write_text(header + t)
+print("F2_COMPAT_DM_LESS=theme_var_stubs")
 PY
   fi
 }
