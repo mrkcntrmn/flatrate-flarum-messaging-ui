@@ -1,6 +1,7 @@
-import { waitForApp, gotoStable } from './auth.mjs';
+import { waitForApp, gotoStable, attachPageDiagnostics } from './auth.mjs';
 
 export async function openMessages(page, path = '/messages') {
+  const browserDiag = attachPageDiagnostics(page);
   await gotoStable(page, path);
   try {
     await page.waitForSelector('.MessagesPage, .MessagesShell', { timeout: 60_000 });
@@ -8,6 +9,7 @@ export async function openMessages(page, path = '/messages') {
     const diag = await page
       .evaluate(() => {
         const routes = window.app?.routes ? Object.keys(window.app.routes).sort() : [];
+        const boot = window.app?.data || window.flarum?.data || null;
         return {
           href: location.href,
           title: document.title,
@@ -21,9 +23,18 @@ export async function openMessages(page, path = '/messages') {
             live: !!window.app?.flatRateMessagingSources?.live,
             direct: !!window.app?.flatRateMessagingSources?.direct,
           },
+          extensionIds: Array.isArray(boot?.extensions)
+            ? boot.extensions
+            : boot?.extensions
+              ? Object.keys(boot.extensions)
+              : null,
+          forumJsSrc: document.querySelector('script[src*="forum.js"]')?.src || null,
         };
       })
       .catch((e) => ({ evaluateError: String(e) }));
+    diag.pageErrors = (browserDiag.pageErrors || []).slice(-8);
+    diag.console = (browserDiag.console || []).slice(-12);
+    diag.requestsFailed = (browserDiag.requestsFailed || []).slice(-12);
     throw new Error(`openMessages failed path=${path} diag=${JSON.stringify(diag)} cause=${err && err.message ? err.message : err}`);
   }
 }

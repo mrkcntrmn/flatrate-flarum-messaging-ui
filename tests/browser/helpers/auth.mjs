@@ -53,7 +53,28 @@ export async function gotoStable(page, path = '/') {
   throw new Error(`gotoStable failed path=${path} attempts=${JSON.stringify(attempts)}`);
 }
 
+export function attachPageDiagnostics(page) {
+  if (page.__flatrateDiagAttached) return page.__flatrateDiag;
+  const diag = { console: [], pageErrors: [], requestsFailed: [] };
+  page.on('console', (msg) => {
+    const type = msg.type();
+    if (type === 'error' || type === 'warning') {
+      diag.console.push({ type, text: msg.text().slice(0, 400) });
+    }
+  });
+  page.on('pageerror', (err) => {
+    diag.pageErrors.push(String(err && err.message ? err.message : err).slice(0, 500));
+  });
+  page.on('requestfailed', (req) => {
+    diag.requestsFailed.push(`${req.failure()?.errorText || 'fail'} ${req.url()}`.slice(0, 300));
+  });
+  page.__flatrateDiagAttached = true;
+  page.__flatrateDiag = diag;
+  return diag;
+}
+
 export async function loginAs(page, username, password) {
+  attachPageDiagnostics(page);
   await gotoStable(page, '/');
 
   const already = await page.evaluate((u) => {

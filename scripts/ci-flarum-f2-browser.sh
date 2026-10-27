@@ -708,19 +708,26 @@ if [[ "${home_ready}" != "1" ]]; then
 fi
 echo "HOMEPAGE_READY=PASS"
 
-# Prove extension frontend JS landed in the served forum bundle.
+# Prove enabled extension initializers were compiled into the served forum bundle.
 FORUM_JS="${SMOKE_ROOT}/app/public/assets/forum.js"
 if [[ -f "${FORUM_JS}" ]]; then
-  for needle in flatrate-messaging-ui flatrate-live-chat flatrate-private-messages; do
-    if ! grep -q "${needle}" "${FORUM_JS}"; then
-      echo "FORUM_JS_MISSING_NEEDLE=${needle} size=$(wc -c <"${FORUM_JS}")" >&2
-      fail COMBINED_F2_BOOT "forum_js_missing_${needle}"
+  for needle in \
+    'initializers.add("flatrate-messaging-ui"' \
+    'initializers.add("flatrate-live-chat"' \
+    'initializers.add("neoncube-private-messages"'
+  do
+    if ! grep -F -q "${needle}" "${FORUM_JS}"; then
+      echo "FORUM_JS_MISSING_INITIALIZER=${needle} size=$(wc -c <"${FORUM_JS}")" >&2
+      echo "FORUM_JS_INITIALIZERS=$(grep -oE 'initializers\.add\(\"[^\"]+\"' "${FORUM_JS}" | sort -u | tr '\n' ' ')" >&2
+      fail COMBINED_F2_BOOT "forum_js_missing_initializer"
     fi
   done
   echo "FORUM_JS_EXTENSIONS=PASS size=$(wc -c <"${FORUM_JS}")"
+  # Keep a copy for CI artifact triage when Playwright still fails.
+  cp -f "${FORUM_JS}" "${EVIDENCE_DIR}/forum.js" 2>/dev/null || true
 else
-  echo "FORUM_JS_COMPILED=absent (debug asset mode)"
-  echo "HOMEPAGE_HAS_MESSAGING=$(grep -c 'flatrate-messaging-ui\|/messages' "${home_body}" || true)"
+  echo "FORUM_JS_COMPILED=absent (debug asset mode)" >&2
+  fail COMBINED_F2_BOOT "forum_js_absent"
 fi
 
 token_for() {
