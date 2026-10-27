@@ -67,28 +67,43 @@ export async function sendDirectComposer(page, text) {
     '.MessagesComposer-input, .DirectComposer textarea, textarea.MessagesComposer-input, .MessagesDirectSurface textarea'
   );
   await input.first().waitFor({ state: 'visible', timeout: 45_000 });
-  // Mithril Stream-controlled textarea: fill() fights the binding; a disabled
-  // send button also ignores force-clicks. Type so canSend() enables submit.
+  // Mithril Stream-controlled textarea: fill()/pressSequentially fight the
+  // binding and can hang. Set value + input event, wait until canSend enables
+  // the button, then requestSubmit (disabled buttons ignore clicks).
   await input.first().click({ force: true });
-  await input.first().evaluate((ta) => {
-    ta.focus();
+  await page.evaluate((body) => {
+    const ta = document.querySelector(
+      '.MessagesDirectSurface textarea.MessagesComposer-input, form.MessagesComposer textarea.MessagesComposer-input, .DirectComposer textarea'
+    );
+    if (!ta) throw new Error('no_direct_composer');
     const proto = window.HTMLTextAreaElement.prototype;
     const desc = Object.getOwnPropertyDescriptor(proto, 'value');
-    if (desc && typeof desc.set === 'function') desc.set.call(ta, '');
-    else ta.value = '';
-    ta.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }));
-  });
-  await input.first().pressSequentially(text, { delay: 12 });
-  const send = page.locator(
-    '.MessagesDirectSurface .MessagesComposer-send, form.MessagesComposer .MessagesComposer-send'
+    if (desc && typeof desc.set === 'function') desc.set.call(ta, body);
+    else ta.value = body;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    if (window.m && typeof window.m.redraw === 'function') window.m.redraw();
+  }, text);
+  await page.waitForFunction(
+    (body) => {
+      const ta = document.querySelector(
+        '.MessagesDirectSurface textarea.MessagesComposer-input, form.MessagesComposer textarea.MessagesComposer-input, .DirectComposer textarea'
+      );
+      const btn = document.querySelector(
+        '.MessagesDirectSurface .MessagesComposer-send, form.MessagesComposer .MessagesComposer-send'
+      );
+      return !!(ta && ta.value === body && btn && !btn.disabled && !btn.classList.contains('disabled'));
+    },
+    text,
+    { timeout: 15_000 }
   );
-  await page.waitForFunction(() => {
-    const btn = document.querySelector(
-      '.MessagesDirectSurface .MessagesComposer-send, form.MessagesComposer .MessagesComposer-send'
+  await page.evaluate(() => {
+    const form = document.querySelector(
+      '.MessagesDirectSurface form.MessagesComposer, form.MessagesComposer.DirectComposer, form.MessagesComposer'
     );
-    return !!(btn && !btn.disabled && !btn.classList.contains('disabled') && !btn.classList.contains('loading'));
-  }, null, { timeout: 15_000 });
-  await send.first().click();
+    if (!form) throw new Error('no_direct_composer_form');
+    if (typeof form.requestSubmit === 'function') form.requestSubmit();
+    else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  });
   await waitForBubbleText(page, text, 45_000);
 }
 
