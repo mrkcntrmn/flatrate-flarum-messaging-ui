@@ -265,14 +265,13 @@ echo "MESSAGING_UI_SOURCE=${MSG_SHA}"
 [[ -f "${EDGE_PHP}" ]] || fail CENTRIFUGO_FIXTURE "missing_edge ${EDGE_PHP}"
 
 
-# Minimal F2 LESS/CSS compatibility for pinned DM/Live sources (browser-revealed).
-# Live F2 Messaging UI does not need legacy neonchat ChatList/ChatModal packs;
-# those still depend on F1 mixins (.transition, .fa, @phone). Point extend-f2 at
-# forum-f2.less (Messages surface only). DM theme tokens → CSS variables.
+# Minimal F2 CSS pin checks for Live. Direct Messages must ship a native
+# forum-f2.less — do NOT prepend F1 theme stubs into the DM package.
 apply_f2_browser_compat() {
   local live_extend="${LIVE_ROOT}/extend-f2.php"
   local live_f2_less="${LIVE_ROOT}/resources/less/forum-f2.less"
-  local dm_less="${DM_ROOT}/resources/less/extension.less"
+  local dm_extend="${DM_ROOT}/extend-f2.php"
+  local dm_f2_less="${DM_ROOT}/resources/less/forum-f2.less"
 
   # Do not overlay Live source/dist patches. Combined Chromium must exercise the
   # exact pinned Live revision checked out by CI (release candidate authenticity).
@@ -287,43 +286,20 @@ apply_f2_browser_compat() {
   fi
   echo "F2_COMPAT_LIVE_PIN_ASSETS=exact" | tee -a "${EVIDENCE_DIR}/browser.log"
 
-  if [[ -f "${dm_less}" ]] && ! grep -q 'F2_BROWSER_THEME_VARS' "${dm_less}"; then
-    DM_LESS="${dm_less}" python3 - <<'PY'
-from pathlib import Path
-import os
-p = Path(os.environ["DM_LESS"])
-t = p.read_text()
-# F2 no longer injects F1 theme palette into extension LESS compiles. Provide
-# compile-time stubs so lighten/darken/mix and bare @vars resolve.
-header = """\
-// F2_BROWSER_THEME_VARS — disposable Chromium fixture only (not a product theme).
-@body-bg: #ffffff;
-@control-bg: #e8ecf0;
-@control-color: #333333;
-@muted-color: #667788;
-@text-color: #111111;
-@online-user-circle-color: #7FBA00;
-@shadow-color: rgba(0, 0, 0, 0.12);
-@border-radius: 4px;
-@screen-tablet: 768px;
-@screen-tablet-max: 991px;
-@screen-desktop: 992px;
-
-.box-shadow(@string) {
-  box-shadow: @string;
-}
-.Avatar--size(@size) {
-  width: @size;
-  height: @size;
-  font-size: (@size / 2);
-  line-height: @size;
-}
-
-"""
-p.write_text(header + t)
-print("F2_COMPAT_DM_LESS=theme_var_stubs")
-PY
+  if [[ ! -f "${dm_f2_less}" ]]; then
+    fail DM_F2_LESS "pinned DM revision missing resources/less/forum-f2.less (refuses theme stub substitute)"
   fi
+  if [[ ! -f "${dm_extend}" ]] || ! grep -q "resources/less/forum-f2.less" "${dm_extend}"; then
+    fail DM_F2_LESS "extend-f2.php must load forum-f2.less"
+  fi
+  if grep -q "resources/less/extension.less" "${dm_extend}"; then
+    fail DM_F2_LESS "extend-f2.php must not load legacy extension.less on F2"
+  fi
+  if grep -q 'F2_BROWSER_THEME_VARS' "${dm_f2_less}"; then
+    fail DM_F2_LESS "forum-f2.less must not contain fixture theme stubs"
+  fi
+  echo "F2_COMPAT_DM_LESS_STUB=NOT_USED" | tee -a "${EVIDENCE_DIR}/browser.log"
+  echo "DM_F2_NATIVE_STYLESHEET=PASS" | tee -a "${EVIDENCE_DIR}/browser.log"
 }
 apply_f2_browser_compat
 
