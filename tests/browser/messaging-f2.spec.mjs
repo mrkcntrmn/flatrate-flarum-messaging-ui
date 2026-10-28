@@ -243,6 +243,32 @@ test('mobile Chromium emulation 392x721 @ DPR 2.75', async () => {
     expect(metrics.ok).toBeTruthy();
     expect(metrics.dpr).toBeCloseTo(2.75, 1);
     expect(metrics.hasViewport || metrics.hasComposer || metrics.shellHeight > 0).toBeTruthy();
+    await openMessages(page, `/messages/direct/${fixture.conversationId}`);
+    await waitForBubbleText(page, SENTINELS[0]);
+    const geometry = await page.evaluate(() => {
+      const composer = document.querySelector('.MessagesComposer').getBoundingClientRect();
+      const content = document.querySelector('#content').getBoundingClientRect();
+      const notices = document.querySelector('#notices');
+      const button = document.querySelector('.MessagesComposer-send');
+      const rect = button.getBoundingClientRect();
+      const target = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return {
+        composerBottom: composer.bottom, viewport: innerHeight,
+        contentHeight: content.height,
+        noticePosition: notices ? getComputedStyle(notices).position : null,
+        buttonReachable: !!target && (target === button || button.contains(target)),
+      };
+    });
+    expect(geometry.contentHeight).toBeGreaterThan(500);
+    expect(Math.abs(geometry.viewport - geometry.composerBottom)).toBeLessThan(20);
+    expect(geometry.noticePosition).not.toBe('absolute');
+    expect(geometry.buttonReachable).toBeTruthy();
+    const input = page.getByRole('textbox', { name: 'Type your message', exact: true });
+    const pointerMessage = `dm-phone-pointer-${Date.now()}`;
+    await input.fill(pointerMessage);
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await waitForBubbleText(page, pointerMessage);
+    mark('MOBILE_POINTER_SEND', 'PASS', 'real pointer target, full-height content, bottom composer');
     mark('MOBILE_EMULATION', 'PASS', `dpr=${metrics.dpr} shell=${Math.round(metrics.shellHeight)}`);
     mark('MOBILE_EMULATOR', 'PASS', 'chromium_392x721_dpr_2_75');
     mark('ANDROID_PIXEL5', 'NOT_PROVEN', 'physical_device_unavailable');
