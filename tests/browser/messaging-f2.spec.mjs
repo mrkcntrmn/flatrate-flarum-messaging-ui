@@ -269,6 +269,39 @@ test('mobile Chromium emulation 392x721 @ DPR 2.75', async () => {
     await page.getByRole('button', { name: 'Send message', exact: true }).click();
     await waitForBubbleText(page, pointerMessage);
     mark('MOBILE_POINTER_SEND', 'PASS', 'real pointer target, full-height content, bottom composer');
+    const longMessage = `wrapping-${Date.now()} https://example.test/${'a'.repeat(160)}`;
+    await input.fill(longMessage);
+    await page.getByRole('button', { name: 'Send message', exact: true }).click();
+    await waitForBubbleText(page, longMessage);
+    for (const viewport of [
+      { width: 320, height: 568 },
+      { width: 390, height: 844 },
+      { width: 844, height: 390 },
+      { width: 1280, height: 800 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const layout = await page.evaluate(() => {
+        const composer = document.querySelector('.MessagesComposer').getBoundingClientRect();
+        const send = document.querySelector('.MessagesComposer-send');
+        const button = send.getBoundingClientRect();
+        const target = document.elementFromPoint(button.x + button.width / 2, button.y + button.height / 2);
+        return {
+          documentWidth: document.documentElement.scrollWidth, width: innerWidth,
+          bottom: composer.bottom, height: innerHeight,
+          buttonWidth: button.width, buttonHeight: button.height,
+          reachable: !!target && (target === send || send.contains(target)),
+          bubbleOverflow: Array.from(document.querySelectorAll('.MessagesBubble')).some((bubble) => bubble.scrollWidth > bubble.clientWidth + 1),
+        };
+      });
+      expect(layout.documentWidth).toBeLessThanOrEqual(layout.width + 1);
+      expect(Math.abs(layout.bottom - layout.height)).toBeLessThan(20);
+      expect(layout.buttonWidth).toBeGreaterThanOrEqual(44);
+      expect(layout.buttonHeight).toBeGreaterThanOrEqual(44);
+      expect(layout.reachable).toBeTruthy();
+      expect(layout.bubbleOverflow).toBeFalsy();
+    }
+    mark('RESPONSIVE_MESSAGE_GEOMETRY', 'PASS', '320/390/844/1280 widths; long links wrap; bottom composer and reachable 44px control');
+
     mark('MOBILE_EMULATION', 'PASS', `dpr=${metrics.dpr} shell=${Math.round(metrics.shellHeight)}`);
     mark('MOBILE_EMULATOR', 'PASS', 'chromium_392x721_dpr_2_75');
     mark('ANDROID_PIXEL5', 'NOT_PROVEN', 'physical_device_unavailable');
