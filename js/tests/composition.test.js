@@ -154,7 +154,7 @@ test('shell viewport CSS constrains page height and owns message scroll', () => 
   assert.match(less, /\.App--messages\s*\{[\s\S]*overflow:\s*hidden/);
   assert.match(less, /\.App--messages\s*\{[\s\S]*display:\s*flex/);
   assert.match(less, /\.App--messages[\s\S]*\.App-content\s*\{[\s\S]*min-height:\s*0\s*!important/);
-  assert.match(less, /\.App-content\s*>\s*div:first-child\s*\{[\s\S]*position:\s*absolute/);
+  assert.match(less, /\.App-content\s*>\s*#content,[\s\S]*div:first-child:not\(#notices\)\s*\{[\s\S]*position:\s*absolute/);
   // 002F: route-scoped footer removal prevents residual document scroll.
   assert.match(less, /\.App--messages\s*~\s*footer/);
   assert.match(less, /\.App--messages\s*~\s*\.flatrate-forum-footer/);

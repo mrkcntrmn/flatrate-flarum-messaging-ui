@@ -49,8 +49,10 @@
     padding-bottom: 0;
   }
 
-  // Mithril page root is a bare wrapper; pin it so Messages cannot grow the page.
-  .App-content > div:first-child {
+  // F2 inserts #notices before #content. Pin the content, never that notice
+  // layer: covering the viewport with it blocks pointer actions in Messages.
+  .App-content > #content,
+  .App-content > div:first-child:not(#notices) {
     position: absolute;
     inset: 0;
     min-height: 0;

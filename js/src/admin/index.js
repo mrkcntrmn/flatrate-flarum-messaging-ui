@@ -1,7 +1,8 @@
 import app from 'flarum/admin/app';
 
 app.initializers.add('flatrate-messaging-ui', () => {
-  app.extensionData
+  // Flarum 2 renamed ExtensionData to AdminRegistry; retain the F1 path.
+  (app.registry || app.extensionData)
     .for('flatrate-messaging-ui')
     .registerSetting({
       setting: 'flatrate-messaging-ui.notifications_admin_preview_enabled',
